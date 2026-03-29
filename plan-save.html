@@ -1,0 +1,1217 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Istanbul Tourist Pass — Plan & Save</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:#f0ece6;min-height:100vh;overflow-x:hidden}
+    /* ── NAV ── */
+    .itp-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.08);position:sticky;top:0;z-index:100}
+    .itp-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+    .itp-nav-links{display:flex;gap:28px;list-style:none}
+    .itp-nav-links a{font-size:13px;color:#444;text-decoration:none;font-weight:500;transition:color 0.2s}
+    .itp-nav-links a:hover,.itp-nav-links a.active{color:#D91B5C}
+    .itp-nav-right{display:flex;align-items:center;gap:14px}
+    .itp-lang{font-size:12px;color:#666;font-weight:500;cursor:pointer}
+    .itp-btn-buy{background:#D91B5C;color:#fff;border:none;padding:10px 22px;border-radius:40px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.2s,transform 0.1s;text-decoration:none}
+    .itp-btn-buy:hover{background:#b8154e;transform:translateY(-1px)}
+    /* ── TRUST BAR ── */
+    .itp-trust{background:#fff;padding:18px 40px;display:flex;align-items:center;justify-content:center;gap:16px;border-bottom:0.5px solid rgba(0,0,0,0.07);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+    .itp-trust::-webkit-scrollbar{display:none}
+    .itp-trust-badge{display:flex;align-items:center;gap:10px;padding:10px 16px;border:0.5px solid #e0e0e0;border-radius:12px;text-decoration:none;flex-shrink:0;transition:border-color 0.2s,box-shadow 0.2s}
+    .itp-trust-badge:hover{border-color:#bbb;box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+    .itp-badge-info{display:flex;flex-direction:column;gap:1px}
+    .itp-badge-score{font-size:20px;font-weight:800;color:#1a1a1a;line-height:1;letter-spacing:-0.2px}
+    .itp-stars{color:#FBBC04;font-size:12px;letter-spacing:1.5px;line-height:1}
+    .itp-tp-stars{color:#00B67A;font-size:12px;letter-spacing:1.5px;line-height:1}
+    .itp-ta-stars{color:#34E0A1;font-size:12px;letter-spacing:1.5px;line-height:1}
+    .itp-badge-sub{font-size:9px;color:#888;font-weight:400}
+    .itp-trust-sep{width:0.5px;height:40px;background:rgba(0,0,0,0.1);flex-shrink:0}
+    /* ── STATS ROW ── */
+    .itp-stats-row{background:#fff;border-bottom:0.5px solid rgba(0,0,0,0.06);padding:14px 24px;display:flex;align-items:center;justify-content:center;gap:0;overflow-x:auto;flex-wrap:nowrap}
+    .itp-stat{text-align:center;padding:0 20px;position:relative;flex-shrink:0}
+    .itp-stat+.itp-stat::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:24px;width:0.5px;background:rgba(0,0,0,0.1)}
+    .itp-stat-num{font-family:'Inter',sans-serif;font-size:20px;font-weight:900;color:#D91B5C;line-height:1;letter-spacing:-0.2px;white-space:nowrap}
+    .itp-stat-lbl{font-size:9px;color:#888;margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+    /* ── HERO ── */
+    .page-top{background:#f0ece6;padding:52px 40px 0;text-align:center}
+    .page-top-sub{font-size:14px;color:#7a6070;margin-bottom:8px}
+    .page-top-title{font-family:'Inter',sans-serif;font-size:44px;font-weight:900;color:#1a0a12;letter-spacing:-0.5px;line-height:1.1;margin-bottom:12px}
+    .page-top-desc{font-size:15px;color:#5a4050;max-width:600px;margin:0 auto 36px;line-height:1.6}
+    /* ── 3 PASS CARDS ── */
+    .compare-cards-section{background:#f0ece6;padding:0 40px 64px}
+    .compare-cards-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;max-width:1140px;margin:0 auto;align-items:start}
+    .pass-card{background:#fff;border-radius:20px;border:0.5px solid rgba(0,0,0,0.08);overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.05);transition:transform 0.25s,box-shadow 0.25s;display:flex;flex-direction:column;position:relative}
+    .pass-card:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,0.1)}
+    .pass-card.popular{transform:scale(1.03);z-index:2;box-shadow:0 8px 40px rgba(217,27,92,0.15)}
+    .pass-card.popular:hover{transform:scale(1.03) translateY(-4px)}
+    .pass-card-top{padding:24px 22px 18px;border-bottom:0.5px solid rgba(0,0,0,0.06);position:relative}
+    .pass-card-top.fast{border-top:4px solid #1468c8}
+    .pass-card-top.discover{border-top:4px solid #D91B5C}
+    .pass-card-top.prime{border-top:4px solid #c8960c}
+    .pass-card-popular-tag{position:absolute;top:-2px;right:20px;background:#D91B5C;color:#fff;font-size:9px;font-weight:700;padding:6px 14px;border-radius:0 0 8px 8px;letter-spacing:0.5px;text-transform:uppercase}
+    .pass-card-crown{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#c8960c,#e8b420);color:#3a1e00;font-size:9px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:0.5px;margin-bottom:8px;box-shadow:0 2px 8px rgba(200,150,12,0.25)}
+    .pass-card-badge{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;display:block}
+    .pass-card-badge.fast{color:#1468c8}.pass-card-badge.discover{color:#D91B5C}.pass-card-badge.prime{color:#8a5e00}
+    .pass-card-name{font-family:'Inter',sans-serif;font-size:20px;font-weight:900;line-height:1.15;margin-bottom:4px}
+    .pass-card-name.fast{color:#1468c8}.pass-card-name.discover{color:#D91B5C}
+    @keyframes prime-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+    .pass-card-name.prime{background:linear-gradient(90deg,#9a6200,#c8960c,#7a4800,#b47a08);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:prime-shimmer 4s linear infinite}
+    .pass-card-sub{font-size:11px;color:#7a6070;line-height:1.5}
+    .pass-card-price-row{display:flex;align-items:baseline;gap:6px;margin-top:12px}
+    .pass-card-price{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;letter-spacing:-0.5px}
+    .pass-card-price.fast{color:#1468c8}.pass-card-price.discover{color:#D91B5C}.pass-card-price.prime{color:#8a5e00}
+    .pass-card-price-from{font-size:11px;color:#9a8090;font-weight:500}
+    .pass-card-savings-tag{display:inline-block;background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;margin-top:8px}
+    /* Card stats */
+    .pass-card-stats{display:flex;gap:8px;padding:16px 22px;border-bottom:0.5px solid rgba(0,0,0,0.06)}
+    .pass-card-stat{flex:1;text-align:center;padding:10px 4px;background:#faf8f5;border-radius:10px;border:0.5px solid rgba(0,0,0,0.04)}
+    .pass-card-stat-icon{font-size:18px;margin-bottom:2px}
+    .pass-card-stat-label{font-size:9px;font-weight:600;color:#5a4050;line-height:1.3}
+    /* Card items */
+    .pass-card-body{padding:16px 22px;flex:1;display:flex;flex-direction:column}
+    .pass-card-section-title{font-size:11px;font-weight:700;color:#1a0a12;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+    .pass-card-items{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;max-height:none;overflow:hidden;padding-right:4px}
+    .pass-card-items::-webkit-scrollbar{width:3px}
+    .pass-card-items::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:3px}
+    .pass-card-item{display:flex;align-items:center;gap:8px;font-size:11px;color:#3a2030;padding:4px 0}
+    .pass-card-item-check{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;color:#fff}
+    .pass-card-item-check.fast{background:#1468c8}.pass-card-item-check.discover{background:#D91B5C}.pass-card-item-check.prime{background:#c8960c}
+    .pass-card-view-all{font-size:11px;font-weight:600;cursor:pointer;border:none;background:none;padding:2px 0;font-family:'Inter',sans-serif;transition:color 0.15s}
+    .pass-card-view-all.fast{color:#1468c8}.pass-card-view-all.discover{color:#D91B5C}.pass-card-view-all.prime{color:#8a5e00}
+    .pass-card-view-all:hover{text-decoration:underline}
+    /* Card CTA */
+    .pass-card-cta{padding:0 22px 22px;margin-top:auto}
+    .pass-card-cta-btn{display:block;width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:800;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.2s}
+    .pass-card-cta-btn:hover{transform:translateY(-2px)}
+    .pass-card-cta-btn.fast{background:#1468c8;color:#fff;box-shadow:0 4px 16px rgba(20,104,200,0.25)}
+    .pass-card-cta-btn.fast:hover{box-shadow:0 6px 24px rgba(20,104,200,0.35)}
+    .pass-card-cta-btn.discover{background:#D91B5C;color:#fff;box-shadow:0 4px 16px rgba(217,27,92,0.25)}
+    .pass-card-cta-btn.discover:hover{box-shadow:0 6px 24px rgba(217,27,92,0.35)}
+    .pass-card-cta-btn.prime{background:linear-gradient(135deg,#c8960c,#e8b420);color:#3a1e00;box-shadow:0 4px 16px rgba(200,150,12,0.25)}
+    .pass-card-cta-btn.prime:hover{box-shadow:0 6px 24px rgba(200,150,12,0.35)}
+    .pass-card-cta-sub{text-align:center;font-size:10px;color:#9a8090;margin-top:6px}
+    /* ── FEATURE COMPARISON TABLE ── */
+    .compare-table-section{background:#fff;padding:72px 40px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .compare-table-inner{max-width:900px;margin:0 auto}
+    .compare-table-title{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;color:#1a0a12;text-align:center;margin-bottom:6px}
+    .compare-table-subtitle{font-size:14px;color:#7a6070;text-align:center;margin-bottom:36px}
+    .cmp-table{width:100%;border-collapse:collapse}
+    .cmp-table thead th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:14px 12px;border-bottom:2px solid rgba(0,0,0,0.1);text-align:center;vertical-align:bottom}
+    .cmp-table thead th:first-child{text-align:left}
+    .cmp-table thead .th-fast{color:#1468c8}.cmp-table thead .th-discover{color:#D91B5C}.cmp-table thead .th-prime{color:#8a5e00}
+    .cmp-table tbody td{padding:12px;font-size:13px;text-align:center;border-bottom:0.5px solid rgba(0,0,0,0.06);color:#3a2030}
+    .cmp-table tbody td:first-child{text-align:left;font-weight:600;color:#1a0a12}
+    .cmp-table .check{color:#22c55e;font-weight:700;font-size:16px}
+    .cmp-table .cross{color:#d4d4d4;font-size:14px}
+    .cmp-table .val-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+    .cmp-table .val-badge.fast{background:rgba(20,104,200,0.08);color:#1468c8}
+    .cmp-table .val-badge.discover{background:rgba(217,27,92,0.08);color:#D91B5C}
+    .cmp-table .val-badge.prime{background:rgba(180,130,10,0.08);color:#8a5e00}
+    .cmp-table-cta-row td{padding:20px 12px;border-bottom:none}
+    .cmp-table-cta-btn{display:inline-block;padding:10px 24px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.2s;font-family:'Inter',sans-serif}
+    .cmp-table-cta-btn.fast{background:#1468c8;color:#fff}
+    .cmp-table-cta-btn.discover{background:#D91B5C;color:#fff}
+    .cmp-table-cta-btn.prime{background:linear-gradient(135deg,#c8960c,#e8b420);color:#3a1e00}
+    .cmp-table-cta-btn:hover{transform:translateY(-1px);opacity:0.9}
+    /* ── EXAMPLE ITINERARY ── */
+    .itinerary-section{background:#f0ece6;padding:72px 40px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .itinerary-inner{max-width:700px;margin:0 auto}
+    .itinerary-title{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;color:#1a0a12;text-align:center;margin-bottom:6px}
+    .itinerary-subtitle{font-size:14px;color:#7a6070;text-align:center;margin-bottom:28px}
+    .itinerary-controls{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:24px}
+    .itinerary-pass-tabs{display:flex;gap:8px}
+    .itin-pass-tab{padding:10px 24px;border-radius:40px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;border:2px solid rgba(0,0,0,0.1);background:#fff;color:#5a4050;transition:all 0.2s}
+    .itin-pass-tab:hover{border-color:rgba(0,0,0,0.2)}
+    .itin-pass-tab.active-fast{background:#1468c8;color:#fff;border-color:#1468c8}
+    .itin-pass-tab.active-discover{background:#D91B5C;color:#fff;border-color:#D91B5C}
+    .itin-pass-tab.active-prime{background:linear-gradient(135deg,#c8960c,#e8b420);color:#3a1e00;border-color:#c8960c}
+    .itinerary-dur-selector{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+    .itin-dur-btn{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;border:1.5px solid rgba(0,0,0,0.1);background:#fff;color:#5a4050;transition:all 0.2s}
+    .itin-dur-btn:hover{border-color:rgba(0,0,0,0.2)}
+    .itin-dur-btn.active{color:#fff}
+    .itin-dur-btn.active.fast{background:#1468c8;border-color:#1468c8}
+    .itin-dur-btn.active.discover{background:#D91B5C;border-color:#D91B5C}
+    .itin-dur-btn.active.prime{background:linear-gradient(135deg,#c8960c,#e8b420);border-color:#c8960c;color:#3a1e00}
+    .itinerary-card{background:#fff;border-radius:20px;border:0.5px solid rgba(0,0,0,0.08);box-shadow:0 2px 16px rgba(0,0,0,0.05);overflow:hidden}
+    .itin-day{border-bottom:0.5px solid rgba(0,0,0,0.06)}
+    .itin-day:last-child{border-bottom:none}
+    .itin-day-header{display:flex;align-items:center;gap:12px;padding:16px 24px;cursor:pointer;transition:background 0.15s;user-select:none}
+    .itin-day-header:hover{background:rgba(0,0,0,0.015)}
+    .itin-day-line{width:4px;height:24px;border-radius:2px;flex-shrink:0}
+    .itin-day-label{font-family:'Inter',sans-serif;font-size:18px;font-weight:900;flex:1}
+    .itin-day-count{font-size:11px;color:#9a8090;font-weight:500}
+    .itin-day-chevron{font-size:12px;color:#9a8090;transition:transform 0.25s}
+    .itin-day.open .itin-day-chevron{transform:rotate(180deg)}
+    .itin-day-body{max-height:0;overflow:hidden;transition:max-height 0.35s ease}
+    .itin-day.open .itin-day-body{max-height:800px}
+    .itin-day-body-inner{padding:0 24px 20px;display:flex;flex-direction:column;gap:2px}
+    .itin-attr{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,0.05)}
+    .itin-attr:last-child{border-bottom:none}
+    .itin-attr-thumb{width:48px;height:48px;border-radius:10px;flex-shrink:0}
+    .itin-attr-info{flex:1;min-width:0}
+    .itin-attr-name{font-size:13px;font-weight:600;color:#1a0a12;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .itin-attr-duration{font-size:11px;color:#9a8090;display:flex;align-items:center;gap:4px;margin-top:2px}
+    .itin-attr-duration::before{content:'\23F0';font-size:10px}
+    .itin-attr-price{text-align:right;flex-shrink:0}
+    .itin-attr-original{font-size:14px;color:#9a8090;text-decoration:line-through;font-weight:600}
+    .itin-attr-included{font-size:12px;color:#D91B5C;font-weight:700}
+    .itin-total-bar{padding:18px 24px;background:#faf8f5;border-top:1.5px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .itin-total-left{display:flex;flex-direction:column;gap:2px}
+    .itin-total-label{font-size:12px;color:#7a6070;font-weight:500}
+    .itin-total-value{font-size:11px;color:#9a8090}
+    .itin-total-value del{color:#ef4444;font-size:13px;font-weight:700}
+    .itin-total-value .included{color:#22c55e;font-weight:700;font-size:13px;margin-left:6px}
+    .itin-total-cta{padding:10px 24px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s;display:inline-block}
+    .itin-total-cta.fast{background:#1468c8;color:#fff}
+    .itin-total-cta.discover{background:#D91B5C;color:#fff}
+    .itin-total-cta.prime{background:linear-gradient(135deg,#c8960c,#e8b420);color:#3a1e00}
+    .itin-total-cta:hover{transform:translateY(-1px);opacity:0.9}
+    /* ── SAVINGS CALCULATOR ── */
+    .calc-section{background:#f0ece6;padding:72px 40px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .calc-inner{max-width:1000px;margin:0 auto}
+    .calc-title{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;color:#1a0a12;text-align:center;margin-bottom:6px}
+    .calc-subtitle{font-size:14px;color:#7a6070;text-align:center;margin-bottom:36px}
+    .calc-layout{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+    .calc-checklist{background:#fff;border-radius:20px;padding:24px;border:0.5px solid rgba(0,0,0,0.08);box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+    .calc-checklist-title{font-size:13px;font-weight:700;color:#1a0a12;margin-bottom:14px}
+    .calc-items{display:flex;flex-direction:column;gap:4px}
+    .calc-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;user-select:none}
+    .calc-item:hover{background:#faf8f5}
+    .calc-item input[type="checkbox"]{width:18px;height:18px;accent-color:#D91B5C;cursor:pointer;flex-shrink:0}
+    .calc-item-name{font-size:13px;color:#1a0a12;flex:1}
+    .calc-item-price{font-size:12px;font-weight:600;color:#7a6070;flex-shrink:0}
+    .calc-result{background:#fff;border-radius:20px;padding:28px;border:0.5px solid rgba(0,0,0,0.08);box-shadow:0 2px 12px rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:16px}
+    .calc-result-title{font-size:13px;font-weight:700;color:#1a0a12;margin-bottom:4px}
+    .calc-result-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+    .calc-result-label{font-size:14px;color:#5a4050}
+    .calc-result-val{font-family:'Inter',sans-serif;font-size:24px;font-weight:900;color:#ef4444}
+    .calc-result-val del{color:#9a8090;font-size:18px;font-weight:400;margin-right:6px}
+    .calc-pass-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;border:0.5px solid rgba(0,0,0,0.08);transition:all 0.2s}
+    .calc-pass-row:hover{box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+    .calc-pass-info{display:flex;flex-direction:column;gap:2px}
+    .calc-pass-name{font-size:13px;font-weight:700;color:#1a0a12}
+    .calc-pass-price{font-size:11px;color:#7a6070}
+    .calc-pass-saving{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+    .calc-pass-save-amount{font-family:'Inter',sans-serif;font-size:20px;font-weight:900;color:#22c55e}
+    .calc-pass-save-pct{font-size:10px;font-weight:700;color:#22c55e;background:#dcfce7;padding:2px 8px;border-radius:10px}
+    .calc-pass-row.best{border-color:#22c55e;background:#f0fdf4}
+    .calc-empty-msg{text-align:center;padding:32px 0;color:#9a8090;font-size:13px;font-style:italic}
+    /* ── SOCIAL PROOF ── */
+    .social-section{background:#1a0a12;padding:64px 40px;text-align:center}
+    .social-inner{max-width:900px;margin:0 auto}
+    .social-title{font-family:'Inter',sans-serif;font-size:28px;font-weight:900;color:#fff;margin-bottom:8px}
+    .social-counters{display:flex;justify-content:center;gap:48px;margin-bottom:32px;flex-wrap:wrap}
+    .social-counter{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .social-counter-num{font-family:'Inter',sans-serif;font-size:40px;font-weight:900;color:#D91B5C;line-height:1}
+    .social-counter-label{font-size:12px;color:rgba(255,255,255,0.6);font-weight:500}
+    .social-urgency{display:inline-flex;align-items:center;gap:8px;background:rgba(217,27,92,0.15);border:1px solid rgba(217,27,92,0.3);color:#ff6699;padding:12px 24px;border-radius:40px;font-size:13px;font-weight:600;margin-bottom:24px}
+    .social-urgency-dot{width:8px;height:8px;border-radius:50%;background:#D91B5C;animation:pulse-dot 1.5s ease-in-out infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+    .social-badges{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+    .social-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500}
+    .social-badge-icon{font-size:16px}
+    /* ── LOSS AVERSION (Without vs With) ── */
+    .loss-section{background:#faf8f5;padding:72px 40px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .loss-inner{max-width:900px;margin:0 auto}
+    .loss-title{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;color:#1a0a12;text-align:center;margin-bottom:8px}
+    .loss-subtitle{font-size:14px;color:#7a6070;text-align:center;margin-bottom:36px}
+    .loss-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .loss-col{border-radius:20px;padding:28px 24px;border:0.5px solid rgba(0,0,0,0.08)}
+    .loss-col.without{background:#fff5f5;border-color:rgba(239,68,68,0.15)}
+    .loss-col.with-pass{background:#f0fdf4;border-color:rgba(34,197,94,0.15)}
+    .loss-col-header{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+    .loss-col-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .loss-col.without .loss-col-icon{background:rgba(239,68,68,0.1)}
+    .loss-col.with-pass .loss-col-icon{background:rgba(34,197,94,0.1)}
+    .loss-col-label{font-size:15px;font-weight:700}
+    .loss-col.without .loss-col-label{color:#dc2626}
+    .loss-col.with-pass .loss-col-label{color:#16a34a}
+    .loss-items{display:flex;flex-direction:column;gap:10px}
+    .loss-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5}
+    .loss-col.without .loss-item{color:#991b1b}
+    .loss-col.with-pass .loss-item{color:#166534}
+    .loss-item-icon{font-size:14px;flex-shrink:0;margin-top:2px}
+    .loss-price-compare{margin-top:20px;padding:16px;border-radius:12px;text-align:center}
+    .loss-col.without .loss-price-compare{background:rgba(239,68,68,0.06)}
+    .loss-col.with-pass .loss-price-compare{background:rgba(34,197,94,0.06)}
+    .loss-price-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+    .loss-col.without .loss-price-label{color:#dc2626}
+    .loss-col.with-pass .loss-price-label{color:#16a34a}
+    .loss-price-val{font-family:'Inter',sans-serif;font-size:28px;font-weight:900}
+    .loss-col.without .loss-price-val{color:#dc2626;text-decoration:line-through;text-decoration-thickness:2px}
+    .loss-col.with-pass .loss-price-val{color:#16a34a}
+    /* ── CONFIDENCE ── */
+    .confidence-section{background:#fff;padding:64px 40px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .confidence-inner{max-width:800px;margin:0 auto;text-align:center}
+    .confidence-title{font-family:'Inter',sans-serif;font-size:28px;font-weight:900;color:#1a0a12;margin-bottom:8px}
+    .confidence-subtitle{font-size:14px;color:#7a6070;margin-bottom:32px}
+    .confidence-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+    .confidence-item{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 12px;background:#faf8f5;border-radius:14px;border:0.5px solid rgba(0,0,0,0.04);transition:transform 0.2s,box-shadow 0.2s}
+    .confidence-item:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+    .confidence-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+    .confidence-icon.blue{background:rgba(20,104,200,0.08)}.confidence-icon.green{background:rgba(34,197,94,0.08)}.confidence-icon.pink{background:rgba(217,27,92,0.08)}.confidence-icon.amber{background:rgba(245,158,11,0.08)}
+    .confidence-label{font-size:12px;font-weight:600;color:#1a0a12}
+    .confidence-links{font-size:12px;color:#7a6070}
+    .confidence-links a{color:#D91B5C;font-weight:600;text-decoration:none}
+    /* ── MODAL ── */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .modal-overlay.open{display:flex}
+    .modal-box{background:#fff;border-radius:20px;max-width:560px;width:90%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.25)}
+    .modal-header{padding:24px 28px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+    .modal-title{font-family:'Inter',sans-serif;font-size:20px;font-weight:900;color:#1a0a12}
+    .modal-close{width:32px;height:32px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.1);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#666;transition:all 0.15s}
+    .modal-close:hover{background:#f0ece6;color:#1a0a12}
+    .modal-body{padding:20px 28px 28px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+    .modal-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#faf8f5;border-radius:12px;border:0.5px solid rgba(0,0,0,0.05)}
+    .modal-item-img{width:48px;height:48px;border-radius:10px;flex-shrink:0}
+    .modal-item-name{font-size:13px;font-weight:600;color:#1a0a12}
+    /* ── TESTIMONIALS ── */
+    .testimonials-section{background:#faf8f5;padding:72px 40px 80px;border-top:0.5px solid rgba(0,0,0,0.06)}
+    .testimonials-inner{max-width:1140px;margin:0 auto}
+    .testimonials-header-sub{font-size:13px;color:#7a6070;margin-bottom:4px}
+    .testimonials-title{font-family:'Inter',sans-serif;font-size:32px;font-weight:900;color:#1a0a12;margin-bottom:6px}
+    .testimonials-title .heart{color:#D91B5C}
+    .testimonials-slider-wrap{position:relative;overflow:hidden}
+    .testimonials-slider-track{display:flex;gap:16px;transition:transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94);padding:0 4px}
+    .testimonials-video-card{flex:0 0 180px;min-width:0}
+    .testimonials-nav{display:flex;align-items:center;justify-content:space-between;margin-top:20px}
+    .testimonials-dots{display:flex;gap:6px;align-items:center}
+    .testimonials-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.15);transition:all 0.2s}
+    .testimonials-dot.active{width:20px;border-radius:3px;background:#D91B5C}
+    .testimonials-arrows{display:flex;gap:8px}
+    .testimonials-arrow{width:38px;height:38px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.14);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#3a1a28;transition:all 0.18s;font-size:16px;font-family:'Inter',sans-serif}
+    .testimonials-arrow:hover{background:#1A0A12;color:#fff;border-color:#1A0A12}
+    .testimonials-rating{font-size:14px;color:#5a4050;margin-bottom:24px}
+    .testimonials-rating strong{color:#D91B5C}
+    .video-thumb{border-radius:12px;overflow:hidden;position:relative;aspect-ratio:9/16;background:linear-gradient(135deg,#2a1a22,#4a2a38);cursor:pointer}
+    .video-thumb::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.25)}
+    .video-play-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2}
+    .video-play-icon svg{width:14px;height:14px;margin-left:2px}
+    .video-info{margin-top:8px}
+    .video-info-name{font-size:12px;font-weight:600;color:#1a0a12}
+    .video-info-from{font-size:11px;color:#9a8090}
+    .testimonials-cta{text-align:center;margin-top:32px}
+    .testimonials-btn{background:#D91B5C;color:#fff;border:none;padding:14px 36px;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+    /* ── NEWSLETTER ── */
+    .newsletter-section{background:#D91B5C;padding:48px 40px}
+    .newsletter-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:40px;flex-wrap:wrap}
+    .newsletter-title{font-family:'Inter',sans-serif;font-size:26px;font-weight:900;color:#fff;margin-bottom:6px}
+    .newsletter-desc{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;max-width:400px}
+    .newsletter-form{display:flex;gap:8px}
+    .newsletter-input{padding:12px 18px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:#fff;font-size:14px;font-family:'Inter',sans-serif;outline:none;min-width:280px}
+    .newsletter-input::placeholder{color:rgba(255,255,255,0.55)}
+    .newsletter-submit{background:#fff;color:#D91B5C;border:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+    .newsletter-consent{font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;display:flex;align-items:flex-start;gap:6px;margin-top:10px}
+    .newsletter-consent input{margin-top:3px}
+    .newsletter-consent a{color:rgba(255,255,255,0.8)}
+    /* ── FOOTER ── */
+    .itp-footer{background:#0e0608;padding:64px 40px 0;position:relative}
+    .itp-footer::before{content:'';position:absolute;top:0;left:0;right:0;height:0.5px;background:linear-gradient(to right,transparent,rgba(217,27,92,0.5),transparent)}
+    .itp-footer-grid{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;padding-bottom:56px;border-bottom:0.5px solid rgba(255,255,255,0.07)}
+    .itp-footer-logo{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+    .itp-footer-desc{font-size:13px;color:rgba(255,255,255,0.45);line-height:1.7;max-width:260px;margin-bottom:24px}
+    .itp-footer-socials{display:flex;gap:10px}
+    .itp-footer-social-btn{width:36px;height:36px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;text-decoration:none;color:rgba(255,255,255,0.5);transition:all 0.18s}
+    .itp-footer-social-btn:hover{border-color:rgba(217,27,92,0.5);background:rgba(217,27,92,0.1);color:#ff6699}
+    .itp-footer-social-btn svg{width:16px;height:16px}
+    .itp-footer-col-title{font-size:10px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+    .itp-footer-links{list-style:none;display:flex;flex-direction:column;gap:10px}
+    .itp-footer-links a{font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;transition:color 0.18s}
+    .itp-footer-links a:hover{color:#fff}
+    .itp-footer-bottom{max-width:1080px;margin:0 auto;padding:20px 0 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .itp-footer-copy{font-size:12px;color:rgba(255,255,255,0.25)}
+    .itp-footer-legal{display:flex;gap:20px}
+    .itp-footer-legal a{font-size:12px;color:rgba(255,255,255,0.25);text-decoration:none}
+    /* ── STICKY MOBILE CTA ── */
+    .sticky-mobile-cta{display:none}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    /* ══════════ TABLET ══════════ */
+    @media(max-width:1024px){
+      .compare-cards-grid{gap:16px}
+      .pass-card.popular{transform:scale(1.01)}
+      .pass-card.popular:hover{transform:scale(1.01) translateY(-4px)}
+      .calc-layout{gap:24px}
+      .loss-grid{gap:16px}
+      .itp-nav{padding:14px 24px}
+      .page-top{padding:40px 24px 0}
+      .compare-cards-section{padding:0 24px 48px}
+      .compare-table-section{padding:56px 24px}
+      .itinerary-section{padding:56px 24px}
+      .calc-section{padding:56px 24px}
+      .social-section{padding:48px 24px}
+      .loss-section{padding:56px 24px}
+      .confidence-section{padding:48px 24px}
+      .testimonials-section{padding:56px 24px 64px}
+      .newsletter-section{padding:40px 24px}
+      .itp-footer{padding:48px 24px 0}
+      .itp-footer-grid{gap:32px}
+    }
+    /* ══════════ MOBILE ══════════ */
+    @media(max-width:768px){
+      .itp-nav{padding:12px 16px;gap:8px}
+      .itp-nav-links{display:none}
+      .itp-logo svg{width:120px;height:30px}
+      .itp-btn-buy{padding:8px 16px;font-size:12px}
+      .itp-trust{position:sticky;top:48px;z-index:95;padding:8px 10px;gap:6px;justify-content:center;border-bottom:0.5px solid rgba(0,0,0,0.08);box-shadow:0 2px 8px rgba(0,0,0,0.04);flex-wrap:nowrap}
+      .itp-trust-sep{display:none}
+      .itp-trust-badge{padding:8px 6px;border-radius:8px;gap:4px;flex:1 1 0;min-width:0;justify-content:center}
+      .itp-trust-badge .trust-logo{display:none!important}
+      .itp-trust-badge .itp-badge-info{align-items:center;text-align:center}
+      .itp-badge-score{font-size:15px}
+      .itp-stars,.itp-tp-stars,.itp-ta-stars{font-size:7px;letter-spacing:0.5px}
+      .itp-badge-sub{font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .itp-stats-row{padding:10px 8px;gap:0;flex-wrap:nowrap;justify-content:center;overflow-x:auto;scrollbar-width:none}
+      .itp-stats-row::-webkit-scrollbar{display:none}
+      .itp-stat{padding:0 10px}
+      .itp-stat-num{font-size:15px}
+      .itp-stat-lbl{font-size:7px}
+      .page-top{padding:32px 16px 0}
+      .page-top-title{font-size:28px;margin-bottom:8px}
+      .page-top-sub{font-size:12px}
+      .page-top-desc{font-size:13px;margin-bottom:24px}
+      /* Cards stack */
+      .compare-cards-section{padding:0 16px 40px}
+      .compare-cards-grid{grid-template-columns:1fr;gap:16px;max-width:420px;margin:0 auto}
+      .pass-card.popular{transform:none}
+      .pass-card.popular:hover{transform:translateY(-4px)}
+      .pass-card-name{font-size:18px}
+      .pass-card-price{font-size:28px}
+      /* Table */
+      .compare-table-section{padding:40px 16px;overflow-x:auto}
+      .compare-table-inner{min-width:600px}
+      .compare-table-title{font-size:24px}
+      /* Itinerary */
+      .itinerary-section{padding:40px 16px}
+      .itinerary-title{font-size:24px}
+      .itinerary-pass-tabs{flex-wrap:wrap;justify-content:center}
+      .itin-pass-tab{padding:8px 18px;font-size:12px}
+      .itin-day-header{padding:14px 16px;gap:10px}
+      .itin-day-label{font-size:16px}
+      .itin-day-body-inner{padding:0 16px 16px}
+      .itin-attr-thumb{width:40px;height:40px;border-radius:8px}
+      .itin-attr-name{font-size:12px}
+      .itin-total-bar{padding:14px 16px;flex-direction:column;align-items:stretch;text-align:center}
+      .itin-total-cta{width:100%;text-align:center;padding:12px}
+      /* Calculator */
+      .calc-section{padding:40px 16px}
+      .calc-title{font-size:24px}
+      .calc-layout{grid-template-columns:1fr}
+      /* Social */
+      .social-section{padding:40px 16px}
+      .social-title{font-size:22px}
+      .social-counter-num{font-size:32px}
+      .social-counters{gap:32px}
+      /* Loss */
+      .loss-section{padding:40px 16px}
+      .loss-title{font-size:24px}
+      .loss-grid{grid-template-columns:1fr}
+      /* Confidence */
+      .confidence-section{padding:40px 16px}
+      .confidence-title{font-size:22px}
+      .confidence-grid{grid-template-columns:1fr 1fr}
+      /* Modal */
+      .modal-box{width:95%;max-height:85vh;border-radius:16px}
+      .modal-header{padding:18px 16px 12px}
+      .modal-title{font-size:17px}
+      .modal-body{padding:14px 16px 20px}
+      .modal-item{padding:10px 12px;gap:10px}
+      .modal-item-img{width:40px;height:40px}
+      .modal-item-name{font-size:12px}
+      /* Testimonials */
+      .testimonials-section{padding:48px 16px 56px}
+      .testimonials-title{font-size:24px}
+      .testimonials-video-card{flex:0 0 140px}
+      .testimonials-btn{padding:12px 28px;font-size:13px}
+      /* Newsletter */
+      .newsletter-section{padding:32px 16px}
+      .newsletter-inner{flex-direction:column;align-items:flex-start;gap:20px}
+      .newsletter-title{font-size:22px}
+      .newsletter-form{flex-direction:column;width:100%}
+      .newsletter-input{min-width:0;width:100%}
+      .newsletter-submit{width:100%}
+      /* Footer */
+      .itp-footer{padding:40px 16px 0}
+      .itp-footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+      .itp-footer-grid>div:first-child{grid-column:1/-1}
+      .itp-footer-desc{max-width:100%}
+      .itp-footer-bottom{padding:16px 0 20px}
+      /* Sticky CTA */
+      .sticky-mobile-cta{position:fixed;bottom:0;left:0;right:0;z-index:99;background:#fff;border-top:1px solid rgba(0,0,0,0.08);padding:12px 16px;display:flex;align-items:center;justify-content:center;gap:12px;transform:translateY(100%);transition:transform 0.3s ease;box-shadow:0 -4px 20px rgba(0,0,0,0.1)}
+      .sticky-mobile-cta.visible{transform:translateY(0)}
+      .sticky-mobile-cta-btn{background:#D91B5C;color:#fff;border:none;padding:14px 36px;border-radius:10px;font-size:14px;font-weight:800;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background 0.2s}
+      .sticky-mobile-cta-btn:hover{background:#b8154e}
+      body.has-sticky-cta .itp-footer{padding-bottom:80px}
+    }
+    /* ══════════ SMALL MOBILE ══════════ */
+    @media(max-width:400px){
+      .page-top-title{font-size:24px}
+      .pass-card-name{font-size:16px}
+      .pass-card-price{font-size:24px}
+      .confidence-grid{grid-template-columns:1fr 1fr}
+      .social-counters{gap:20px}
+      .social-counter-num{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="itp-nav">
+    <a href="index.html" class="itp-logo"><svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 240 60" fill="none"><clipPath id="lc"><path d="M0 0h240v60H0z"/></clipPath><g clip-path="url(#lc)"><path fill="#f0034e" fill-rule="evenodd" d="M117.499 0H0v27.662h117.499l13.896-13.829zM9.916 21.9h-2.03V5.697h2.03zm9.26.208c-3.57 0-5.983-2.006-5.983-5.2h2.073c0 2.013 1.64 3.209 3.887 3.209 2.035 0 3.644-1.08 3.644-2.797 0-1.894-1.922-2.341-4.026-2.831-2.501-.594-5.273-1.258-5.273-4.49 0-2.797 2.162-4.506 5.516-4.506s5.416 1.863 5.416 4.799h-2.011c0-1.802-1.47-2.855-3.447-2.855-1.976 0-3.443.938-3.443 2.477 0 1.778 1.864 2.226 3.94 2.715 2.548.618 5.42 1.304 5.42 4.672 0 3.059-2.49 4.807-5.716 4.807zm13.981-.209h-2.03V7.603h-4.933V5.698h11.897v1.905h-4.934zm17.46 0-1.61-3.88h-7.79l-1.586 3.88h-2.162l6.632-16.201h1.895l6.817 16.201h-2.204zm17.744 0h-1.714L57.42 9.254V21.9h-1.987V5.698h1.84l9.099 12.494V5.698h1.988zm10.908 0H72.78V5.698h6.404c2.652 0 4.57 1.774 4.57 4.139 0 1.45-.775 2.943-1.995 3.66 1.501.64 2.42 2.172 2.42 3.947 0 2.511-2.123 4.459-4.91 4.459zm20.987-6.033c0 3.692-2.714 6.303-6.353 6.303-3.64 0-6.373-2.611-6.373-6.303V5.698h2.053v10.021c0 2.662 1.791 4.464 4.323 4.464s4.3-1.798 4.3-4.464V5.698h2.054v10.168zm13.383 6.033h-9.156V5.698h2.03v14.296h7.122v1.905z" clip-rule="evenodd"/><path fill="#fe7711" d="M18.892 40.052H12.13v19.422H6.87V40.052H.108v-4.88h18.783zm1.327 7.264c0-7.213 5.554-12.68 12.977-12.68s12.92 5.44 12.92 12.68-5.528 12.68-12.92 12.68S20.22 54.53 20.22 47.316m20.566 0c0-4.409-3.258-7.719-7.589-7.719s-7.647 3.345-7.647 7.72c0 4.374 3.312 7.718 7.647 7.718s7.589-3.31 7.589-7.719M50 50.32V35.164h5.269v14.913c0 3.036 1.98 4.957 4.783 4.957 2.802 0 4.774-1.92 4.774-4.957V35.164h5.27V50.32c0 5.698-4.3 9.675-10.044 9.675s-10.048-3.981-10.048-9.675zm34.033.857H80.66v8.293h-5.262V35.168h9.816c4.872 0 8.5 3.352 8.5 8.04 0 3.178-1.74 5.778-4.431 7.074l5.38 9.188h-5.878zM80.66 46.32h4.21c2.201 0 3.517-1.323 3.517-3.148 0-1.824-1.312-3.147-3.516-3.147H80.66v6.291zm17.7-11.148h5.261v24.302h-5.262zm9.476 16.423h5.304c0 2.35 1.941 3.48 4.091 3.48 1.98 0 3.918-1.046 3.918-2.855s-2.216-2.403-4.856-3.016c-3.667-.903-8.117-1.968-8.117-7.202 0-4.66 3.435-7.287 8.82-7.287s8.766 2.982 8.766 7.823h-5.2c0-2.09-1.729-3.074-3.694-3.074-1.706 0-3.431.72-3.431 2.314 0 1.709 2.111 2.23 4.686 2.843 3.705.937 8.361 2.09 8.361 7.538s-4.185 7.796-9.218 7.796c-5.585 0-9.43-3.133-9.43-8.36m39.177-11.543h-6.763v19.422h-5.261V40.052h-6.762v-4.88h18.782v4.88z"/><g fill="#3eb0de"><path d="M168.48 43.523c0 4.791-3.701 8.356-8.584 8.356H155.8v7.587h-5.261V35.165h9.357c4.875 0 8.584 3.56 8.584 8.36m-5.33 0c0-2.021-1.398-3.487-3.482-3.487h-3.864v6.974h3.864c2.088 0 3.482-1.465 3.482-3.487m21.538 11.34h-9.677l-1.668 4.605h-5.585l9.53-24.302h4.968l9.839 24.302h-5.709zm-8.037-4.583h6.381l-3.208-8.691zm16.224 1.313h5.304c0 2.35 1.941 3.48 4.091 3.48 1.98 0 3.918-1.046 3.918-2.855s-2.215-2.403-4.856-3.016c-3.667-.903-8.117-1.968-8.117-7.202 0-4.66 3.435-7.287 8.82-7.287s8.766 2.982 8.766 7.823h-5.2c0-2.09-1.729-3.074-3.694-3.074-1.706 0-3.431.72-3.431 2.314 0 1.709 2.111 2.23 4.686 2.843 3.706.937 8.361 2.09 8.361 7.538s-4.185 7.796-9.218 7.796c-5.585 0-9.43-3.133-9.43-8.36m21.508 0h5.303c0 2.35 1.942 3.48 4.092 3.48 1.98 0 3.918-1.046 3.918-2.855s-2.216-2.403-4.856-3.016c-3.667-.903-8.118-1.968-8.118-7.202 0-4.66 3.436-7.287 8.821-7.287s8.766 2.982 8.766 7.823h-5.2c0-2.09-1.729-3.074-3.694-3.074-1.706 0-3.431.72-3.431 2.314 0 1.709 2.111 2.23 4.686 2.843 3.705.937 8.361 2.09 8.361 7.538s-4.185 7.796-9.218 7.796c-5.586 0-9.43-3.133-9.43-8.36"/></g></g></svg></a>
+    <ul class="itp-nav-links"><li><a href="#">Explore</a></li><li><a href="#">Attractions</a></li><li><a href="#" class="active">Plan & Save</a></li><li><a href="buy-now.html">Passes & Prices</a></li><li><a href="#">Help</a></li></ul>
+    <div class="itp-nav-right"><span class="itp-lang">&#x1F1EC;&#x1F1E7; EN</span><a href="buy-now.html" class="itp-btn-buy">BUY NOW</a></div>
+  </nav>
+  <!-- TRUST BAR -->
+  <div class="itp-trust">
+    <a href="#" class="itp-trust-badge"><div class="trust-logo" style="display:flex;align-items:center;height:24px"><svg width="24" height="24" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></div><div class="itp-badge-info"><span class="itp-badge-score">4.7</span><span class="itp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="itp-badge-sub">Google</span></div></a>
+    <div class="itp-trust-sep"></div>
+    <a href="#" class="itp-trust-badge"><div class="trust-logo" style="display:flex;align-items:center;height:24px"><svg width="70" height="18" viewBox="0 0 260 66"><rect width="66" height="66" rx="4" fill="#00B67A"/><path d="M33 7l6.18 19.02H58.8L43.31 37.96l6.18 19.02L33 45.04 16.51 57 22.69 37.96 7.2 26.02H26.82z" fill="#fff"/><text x="76" y="48" font-family="Arial" font-size="38" font-weight="700" fill="#191919">Trustpilot</text></svg></div><div class="itp-badge-info"><span class="itp-badge-score">4.5</span><span class="itp-tp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="itp-badge-sub">Trustpilot</span></div></a>
+    <div class="itp-trust-sep"></div>
+    <a href="#" class="itp-trust-badge"><div class="trust-logo" style="display:flex;align-items:center;height:24px"><svg width="90" height="20" viewBox="0 0 320 76"><circle cx="38" cy="38" r="38" fill="#34E0A1"/><circle cx="24" cy="38" r="12" fill="#fff"/><circle cx="52" cy="38" r="12" fill="#fff"/><circle cx="24" cy="38" r="6" fill="#000"/><circle cx="52" cy="38" r="6" fill="#000"/><path d="M14 20 Q38 4 62 20" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round"/><text x="86" y="52" font-family="Arial" font-size="36" font-weight="700" fill="#191919">Tripadvisor</text></svg></div><div class="itp-badge-info"><span class="itp-badge-score">4.6</span><span class="itp-ta-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span><span class="itp-badge-sub">Tripadvisor</span></div></a>
+  </div>
+  <!-- STATS ROW -->
+  <div class="itp-stats-row">
+    <div class="itp-stat"><div class="itp-stat-num">80+</div><div class="itp-stat-lbl">Attractions</div></div>
+    <div class="itp-stat"><div class="itp-stat-num">500K+</div><div class="itp-stat-lbl">Happy Visitors</div></div>
+    <div class="itp-stat"><div class="itp-stat-num">%40</div><div class="itp-stat-lbl">Avg. Savings</div></div>
+    <div class="itp-stat"><div class="itp-stat-num">Since 2015</div><div class="itp-stat-lbl">Istanbul's Original Pass</div></div>
+  </div>
+  <!-- HERO -->
+  <section class="page-top">
+    <p class="page-top-sub">Skip the queues. Save up to 70%. See everything.</p>
+    <h1 class="page-top-title">Plan & Save on Istanbul's Top Attractions</h1>
+    <p class="page-top-desc">Compare all three passes side by side. Find the perfect one for your trip and start saving from the moment you arrive.</p>
+  </section>
+  <!-- 3 PASS CARDS -->
+  <section class="compare-cards-section">
+    <div class="compare-cards-grid" id="compareCards"></div>
+  </section>
+  <!-- FEATURE COMPARISON TABLE -->
+  <section class="compare-table-section">
+    <div class="compare-table-inner">
+      <h2 class="compare-table-title">Compare All Passes</h2>
+      <p class="compare-table-subtitle">See exactly what's included in each pass at a glance</p>
+      <div style="overflow-x:auto">
+        <table class="cmp-table" id="cmpTable"></table>
+      </div>
+    </div>
+  </section>
+  <!-- EXAMPLE ITINERARY -->
+  <section class="itinerary-section">
+    <div class="itinerary-inner">
+      <h2 class="itinerary-title">Example Itinerary</h2>
+      <p class="itinerary-subtitle">See what a typical trip looks like with each pass</p>
+      <div class="itinerary-controls">
+        <div class="itinerary-pass-tabs" id="itinPassTabs"></div>
+        <div class="itinerary-dur-selector" id="itinDurSelector"></div>
+      </div>
+      <div class="itinerary-card" id="itinCard"></div>
+    </div>
+  </section>
+  <!-- SAVINGS CALCULATOR -->
+  <section class="calc-section">
+    <div class="calc-inner">
+      <h2 class="calc-title">See How Much You'll Save</h2>
+      <p class="calc-subtitle">Select the attractions you want to visit and see your savings instantly</p>
+      <div class="calc-layout">
+        <div class="calc-checklist">
+          <div class="calc-checklist-title">Popular Istanbul Attractions</div>
+          <div class="calc-items" id="calcItems"></div>
+        </div>
+        <div class="calc-result" id="calcResult"></div>
+      </div>
+    </div>
+  </section>
+  <!-- SOCIAL PROOF -->
+  <section class="social-section">
+    <div class="social-inner">
+      <h2 class="social-title">Join Thousands of Happy Travelers</h2>
+      <div class="social-counters">
+        <div class="social-counter"><div class="social-counter-num" data-target="12847">0</div><div class="social-counter-label">Tourists this month</div></div>
+        <div class="social-counter"><div class="social-counter-num" data-target="500000">0</div><div class="social-counter-label">Happy visitors since 2015</div></div>
+        <div class="social-counter"><div class="social-counter-num" data-target="48">0</div><div class="social-counter-label">Average rating (out of 50)</div></div>
+      </div>
+      <div class="social-urgency"><span class="social-urgency-dot"></span> 47 people are viewing passes right now</div>
+      <div class="social-badges">
+        <div class="social-badge"><span class="social-badge-icon">&#x1F512;</span> Secure SSL checkout</div>
+        <div class="social-badge"><span class="social-badge-icon">&#x1F4F1;</span> Instant digital delivery</div>
+        <div class="social-badge"><span class="social-badge-icon">&#x21A9;&#xFE0F;</span> Free cancellation</div>
+        <div class="social-badge"><span class="social-badge-icon">&#x1F4C5;</span> 1-year validity</div>
+      </div>
+    </div>
+  </section>
+  <!-- WITHOUT vs WITH PASS -->
+  <section class="loss-section">
+    <div class="loss-inner">
+      <h2 class="loss-title">Why Buy Individual Tickets When You Can Save?</h2>
+      <p class="loss-subtitle">See the difference a tourist pass makes for a typical 3-day Istanbul trip</p>
+      <div class="loss-grid">
+        <div class="loss-col without">
+          <div class="loss-col-header"><div class="loss-col-icon">&#x274C;</div><div class="loss-col-label">Without a Pass</div></div>
+          <div class="loss-items">
+            <div class="loss-item"><span class="loss-item-icon">&#x23F3;</span> Wait in long ticket queues at every attraction</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F4B8;</span> Pay full price for each individual ticket</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F6AB;</span> No guided tours or skip-the-line access</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F616;</span> Worry about carrying cash for each venue</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F4C9;</span> Miss out on hidden gems and local experiences</div>
+          </div>
+          <div class="loss-price-compare">
+            <div class="loss-price-label">Typical 3-day cost</div>
+            <div class="loss-price-val" id="lossWithout">&#8364;497</div>
+          </div>
+        </div>
+        <div class="loss-col with-pass">
+          <div class="loss-col-header"><div class="loss-col-icon">&#x2705;</div><div class="loss-col-label">With Istanbul Tourist Pass</div></div>
+          <div class="loss-items">
+            <div class="loss-item"><span class="loss-item-icon">&#x26A1;</span> Skip the line at all major attractions</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F4B0;</span> Save up to 70% on admission fees</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F3AF;</span> Expert guided tours included at no extra cost</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x1F4F1;</span> One digital pass for everything — no cash needed</div>
+            <div class="loss-item"><span class="loss-item-icon">&#x2728;</span> 100+ attractions, premium experiences & hidden gems</div>
+          </div>
+          <div class="loss-price-compare">
+            <div class="loss-price-label">3-Day DISCOVER Pass</div>
+            <div class="loss-price-val" id="lossWith">&#8364;179</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- BUY WITH CONFIDENCE -->
+  <section class="confidence-section">
+    <div class="confidence-inner">
+      <h2 class="confidence-title">Buy With Confidence</h2>
+      <p class="confidence-subtitle">Your satisfaction is guaranteed with every Istanbul Tourist Pass</p>
+      <div class="confidence-grid">
+        <div class="confidence-item"><div class="confidence-icon blue">&#x1F512;</div><div class="confidence-label">Secure Payment</div></div>
+        <div class="confidence-item"><div class="confidence-icon green">&#x2713;</div><div class="confidence-label">Savings Guarantee</div></div>
+        <div class="confidence-item"><div class="confidence-icon pink">&#x1F4C5;</div><div class="confidence-label">1-Year Validity</div></div>
+        <div class="confidence-item"><div class="confidence-icon amber">&#x21A9;</div><div class="confidence-label">Easy Cancellation</div></div>
+        <div class="confidence-item"><div class="confidence-icon blue">&#x26A1;</div><div class="confidence-label">Digital Delivery</div></div>
+        <div class="confidence-item"><div class="confidence-icon green">&#x1F4AC;</div><div class="confidence-label">Live Support</div></div>
+        <div class="confidence-item"><div class="confidence-icon pink">&#x1F3AB;</div><div class="confidence-label">Skip the Line</div></div>
+        <div class="confidence-item"><div class="confidence-icon amber">&#x1F5D3;</div><div class="confidence-label">Flexible Sightseeing</div></div>
+      </div>
+      <div class="confidence-links"><span>Have more questions?</span> <a href="#">Visit our FAQs &rarr;</a> &nbsp; <a href="#">Contact Us &rarr;</a></div>
+    </div>
+  </section>
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box"><div class="modal-header"><div class="modal-title" id="modalTitle"></div><button class="modal-close" onclick="closeModal()">&#x2715;</button></div><div class="modal-body" id="modalBody"></div></div>
+  </div>
+  <!-- Testimonials -->
+  <section class="testimonials-section"><div class="testimonials-inner">
+    <p class="testimonials-header-sub">What our customers say?</p>
+    <h2 class="testimonials-title">People <span class="heart">&#x2764;</span> Istanbul Tourist Pass&reg;</h2>
+    <div class="testimonials-rating">Istanbul Tourist Pass&reg; has an average rating of <strong>4.8 /5</strong> from <strong>10K+</strong> reviews</div>
+    <div class="testimonials-slider-wrap">
+      <div class="testimonials-slider-track" id="tmSliderTrack">
+        <div class="testimonials-video-card"><div class="video-thumb"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Alina</div><div class="video-info-from">from Ukraine</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#4a2a38,#6b3a50)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Ursula P.</div><div class="video-info-from">from Germany</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#3a2a22,#5a3a30)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Olina R.</div><div class="video-info-from">from Russia</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#2a3a4a,#4a5a6a)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Tatjana S.</div><div class="video-info-from">from Russia</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#5a2a38,#7b3a50)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Ivan P.</div><div class="video-info-from">from Russia</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#2a4a3a,#4a6a5a)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Volodymyr K.</div><div class="video-info-from">from Germany</div></div></div>
+        <div class="testimonials-video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#4a3a2a,#6b5a4a)"><div class="video-play-icon"><svg viewBox="0 0 24 24" fill="#1a0a12"><path d="M8 5v14l11-7z"/></svg></div></div><div class="video-info"><div class="video-info-name">Elena H.</div><div class="video-info-from">from Germany</div></div></div>
+      </div>
+    </div>
+    <div class="testimonials-nav">
+      <div class="testimonials-dots" id="tmDots"></div>
+      <div class="testimonials-arrows">
+        <button class="testimonials-arrow" id="tmPrev" onclick="slideTm(-1)">&#8249;</button>
+        <button class="testimonials-arrow" id="tmNext" onclick="slideTm(1)">&#8250;</button>
+      </div>
+    </div>
+    <div class="testimonials-cta"><button class="testimonials-btn">Watch All Testimonials</button></div>
+  </div></section>
+  <section class="newsletter-section"><div class="newsletter-inner"><div><h2 class="newsletter-title">Plan your perfect Istanbul trip &mdash; for free!</h2><p class="newsletter-desc">Sign up for our newsletter and get expertly crafted itineraries.</p></div><div><div class="newsletter-form"><input type="email" class="newsletter-input" placeholder="Enter your e-mail address"><button class="newsletter-submit">Subscribe</button></div><label class="newsletter-consent"><input type="checkbox">By signing up, you agree to The Istanbul Tourist Pass&reg;'s <a href="#">privacy policy</a>.</label></div></div></section>
+  <footer class="itp-footer"><div class="itp-footer-grid"><div><div class="itp-footer-logo"><svg xmlns="http://www.w3.org/2000/svg" width="160" height="40" viewBox="0 0 240 60" fill="none"><clipPath id="lc2"><path d="M0 0h240v60H0z"/></clipPath><g clip-path="url(#lc2)"><path fill="#f0034e" fill-rule="evenodd" d="M117.499 0H0v27.662h117.499l13.896-13.829zM9.916 21.9h-2.03V5.697h2.03zm9.26.208c-3.57 0-5.983-2.006-5.983-5.2h2.073c0 2.013 1.64 3.209 3.887 3.209 2.035 0 3.644-1.08 3.644-2.797 0-1.894-1.922-2.341-4.026-2.831-2.501-.594-5.273-1.258-5.273-4.49 0-2.797 2.162-4.506 5.516-4.506s5.416 1.863 5.416 4.799h-2.011c0-1.802-1.47-2.855-3.447-2.855-1.976 0-3.443.938-3.443 2.477 0 1.778 1.864 2.226 3.94 2.715 2.548.618 5.42 1.304 5.42 4.672 0 3.059-2.49 4.807-5.716 4.807zm13.981-.209h-2.03V7.603h-4.933V5.698h11.897v1.905h-4.934zm17.46 0-1.61-3.88h-7.79l-1.586 3.88h-2.162l6.632-16.201h1.895l6.817 16.201h-2.204zm17.744 0h-1.714L57.42 9.254V21.9h-1.987V5.698h1.84l9.099 12.494V5.698h1.988zm10.908 0H72.78V5.698h6.404c2.652 0 4.57 1.774 4.57 4.139 0 1.45-.775 2.943-1.995 3.66 1.501.64 2.42 2.172 2.42 3.947 0 2.511-2.123 4.459-4.91 4.459zm20.987-6.033c0 3.692-2.714 6.303-6.353 6.303-3.64 0-6.373-2.611-6.373-6.303V5.698h2.053v10.021c0 2.662 1.791 4.464 4.323 4.464s4.3-1.798 4.3-4.464V5.698h2.054v10.168zm13.383 6.033h-9.156V5.698h2.03v14.296h7.122v1.905z" clip-rule="evenodd"/><path fill="#fe7711" d="M18.892 40.052H12.13v19.422H6.87V40.052H.108v-4.88h18.783zm1.327 7.264c0-7.213 5.554-12.68 12.977-12.68s12.92 5.44 12.92 12.68-5.528 12.68-12.92 12.68S20.22 54.53 20.22 47.316m20.566 0c0-4.409-3.258-7.719-7.589-7.719s-7.647 3.345-7.647 7.72c0 4.374 3.312 7.718 7.647 7.718s7.589-3.31 7.589-7.719M50 50.32V35.164h5.269v14.913c0 3.036 1.98 4.957 4.783 4.957 2.802 0 4.774-1.92 4.774-4.957V35.164h5.27V50.32c0 5.698-4.3 9.675-10.044 9.675s-10.048-3.981-10.048-9.675zm34.033.857H80.66v8.293h-5.262V35.168h9.816c4.872 0 8.5 3.352 8.5 8.04 0 3.178-1.74 5.778-4.431 7.074l5.38 9.188h-5.878zM80.66 46.32h4.21c2.201 0 3.517-1.323 3.517-3.148 0-1.824-1.312-3.147-3.516-3.147H80.66v6.291zm17.7-11.148h5.261v24.302h-5.262z"/><g fill="#3eb0de"><path d="M168.48 43.523c0 4.791-3.701 8.356-8.584 8.356H155.8v7.587h-5.261V35.165h9.357c4.875 0 8.584 3.56 8.584 8.36m-5.33 0c0-2.021-1.398-3.487-3.482-3.487h-3.864v6.974h3.864c2.088 0 3.482-1.465 3.482-3.487"/></g></g></svg></div><p class="itp-footer-desc">Istanbul's original all-inclusive city pass &mdash; 80+ museums, tours & experiences.</p><div class="itp-footer-socials"><a href="#" class="itp-footer-social-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/></svg></a><a href="#" class="itp-footer-social-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a></div></div><div><div class="itp-footer-col-title">Explore</div><ul class="itp-footer-links"><li><a href="#">Istanbul Pass</a></li><li><a href="#">What You Get</a></li><li><a href="#">How It Works</a></li><li><a href="#">Plan & Save</a></li></ul></div><div><div class="itp-footer-col-title">Company</div><ul class="itp-footer-links"><li><a href="#">About Us</a></li><li><a href="#">Groups</a></li><li><a href="#">Resellers</a></li><li><a href="#">Contact</a></li></ul></div><div><div class="itp-footer-col-title">Support</div><ul class="itp-footer-links"><li><a href="#">FAQ</a></li><li><a href="#">Help Center</a></li><li><a href="#">Terms & Conditions</a></li><li><a href="#">Privacy Policy</a></li></ul></div></div><div class="itp-footer-bottom"><div class="itp-footer-copy">&copy; 2025 Istanbul Tourist Pass&reg;. All rights reserved.</div><div class="itp-footer-legal"><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Cookies</a></div></div></footer>
+  <!-- Sticky Mobile CTA -->
+  <div class="sticky-mobile-cta" id="stickyMobileCta">
+    <button class="sticky-mobile-cta-btn" onclick="document.getElementById('compareCards').scrollIntoView({behavior:'smooth'})">Compare & Buy Passes &rarr;</button>
+  </div>
+
+<script>
+const G=['linear-gradient(135deg,#c9a98a,#8b6f5e)','linear-gradient(135deg,#5a4a3a,#8b7355)','linear-gradient(135deg,#2d5a4a,#5a8c6e)','linear-gradient(135deg,#6b4e2a,#b8956a)','linear-gradient(135deg,#1a3d5c,#4a6b8c)','linear-gradient(135deg,#8b6f5e,#c9a98a)','linear-gradient(135deg,#b8956a,#6b4e2a)','linear-gradient(135deg,#5a4a3a,#8b7355)'];
+const P={
+  fast:{tagline:'I want a quick trip',theme:'fast',badge:'BEST SIGHTS IN ONE DAY',name:'Istanbul FAST Pass\u00ae',sub:'Visit 2 landmarks & 2 authentic experiences including Hagia Sofia or Topkapi Palace and Blue Mosque.',adultPrice:49,childPrice:39,step1Type:'option',options:[{label:'With Hagia Sophia',price:'\u20ac49',popular:true},{label:'With Topkapi Palace',price:'\u20ac69'}],
+    allSavings:{'Hagia Sophia Option':{cost:89,pass:49,pct:45},'Topkapi Palace Option':{cost:129,pass:69,pct:46}},
+    savingsTabs:[{l:'Hagia Sophia Option',a:true},{l:'Topkapi Palace Option'}],
+    compare:null,
+    details:{eyebrow:'What You Get',title:'Fast-Track Istanbul Experience',desc:'Explore the best sights fast in a single day.',
+      stats:[{icon:'\uD83C\uDFDB',label:'2 Top Landmarks'},{icon:'\uD83C\uDFAD',label:'2 Experiences'},{icon:'\uD83D\uDE90',label:'Airport Transfer'}],
+      sections:[{title:'2 Top Landmarks',items:['Hagia Sophia Guided Tour with Skip-the-Line','Topkapi Palace Museum Guided Tour'],or:'Blue Mosque Entry with Guided Tour'},{title:'3 Activities',items:['Authentic Turkish Cuisine Tasting','Ottoman Style Photo Shoot Experience','Istanbul Airport Shuttle Services']}]}
+  },
+  discover:{tagline:'I want to explore in a budget friendly way',theme:'discover',badge:'ISTANBUL MUST-SEES',name:'Istanbul DISCOVER Pass\u00ae',sub:'Visit 3 landmarks, 100+ top attractions including Hagia Sofia, Topkapi Palace, Blue Mosque.',adultPrice:179,childPrice:169,step1Type:'duration',
+    durations:[{l:'1 Day',p:'\u20ac99',v:99},{l:'2 Days',p:'\u20ac139',v:139},{l:'3 Days',p:'\u20ac179',v:179,popular:true},{l:'4 Days',p:'\u20ac209',v:209},{l:'5 Days',p:'\u20ac249',v:249}],
+    allSavings:{'1-Day DISCOVER Pass':{cost:198,pass:99,pct:50},'2-Day DISCOVER Pass':{cost:348,pass:139,pct:60},'3-Day DISCOVER Pass':{cost:497,pass:179,pct:64},'4-Day DISCOVER Pass':{cost:638,pass:209,pct:67},'5-Day DISCOVER Pass':{cost:785,pass:249,pct:68}},
+    savingsTabs:[{l:'1-Day DISCOVER Pass'},{l:'2-Day DISCOVER Pass'},{l:'3-Day DISCOVER Pass',a:true},{l:'4-Day DISCOVER Pass'},{l:'5-Day DISCOVER Pass'}],
+    compare:{vs:'FAST Pass',title:'Why upgrade from FAST Pass?',subtitle:'DISCOVER includes everything in FAST, plus much more.',rows:[{f:'Top Landmarks',lo:'2',hi:'3',ex:'+1'},{f:'Attractions & Activities',lo:'\u2014',hi:'100+',ex:'+100'},{f:'Guided Tours',lo:'\u2014',hi:'\u2713',ex:'NEW'},{f:'Galata Tower Entry',lo:'\u2717',hi:'\u2713'},{f:'Basilica Cistern Tour',lo:'\u2717',hi:'\u2713'},{f:'Dolmabahce Palace',lo:'\u2717',hi:'\u2713'},{f:'Multi-day Flexibility',lo:'1 day',hi:'1-5 days'}]},
+    details:{eyebrow:'What You Get',title:'Affordable & Rich Istanbul Journey',desc:'Discover must-see highlights without stretching your budget.',
+      stats:[{icon:'\uD83C\uDFDB',label:'3 Top Landmarks'},{icon:'\uD83C\uDFAD',label:'100+ Attractions'},{icon:'\uD83D\uDDFA',label:'Guided Tours'}],
+      sections:[{title:'3 Top Landmarks',items:['Hagia Sophia Guided Tour with Skip-the-Line','Topkapi Palace Museum Guided Tour','Blue Mosque Entry with Guided Tour']},{title:'100+ Attractions & Activities',items:['Galata Tower Hosted Entry with Audio Guide','Basilica Cistern Guided Tour','Dolmabahce Palace Museum Skip-the-Line','Spice Bazaar Turkish Delights & Herbal Tea','Yildiz Palace Skip-the-Ticket-Line Entry','Legends of Istanbul Live Show','Le Vapeur Magique \u2014 Morning Turkish Breakfast','Whirling Dervishes Show at Abud Efendi','Camlica Tower Observation Deck','Istanbul Archaeological Museums','Turkish & Islamic Arts Museum','Authentic Turkish Cuisine Tasting']}]}
+  },
+  prime:{tagline:'I want to see as much as possible',theme:'prime',badge:'ULTIMATE ISTANBUL EXPERIENCE',name:'Istanbul PRIME Pass\u00ae',sub:'Visit ALL 7 landmarks, 120+ top attractions & premium experiences.',adultPrice:249,childPrice:229,step1Type:'duration',
+    durations:[{l:'1 Day',p:'\u20ac139',v:139},{l:'2 Days',p:'\u20ac179',v:179},{l:'3 Days',p:'\u20ac209',v:209},{l:'4 Days',p:'\u20ac229',v:229},{l:'5 Days',p:'\u20ac249',v:249,popular:true},{l:'6 Days',p:'\u20ac279',v:279},{l:'7 Days',p:'\u20ac309',v:309}],
+    allSavings:{'1-Day PRIME Pass':{cost:318,pass:139,pct:56},'2-Day PRIME Pass':{cost:468,pass:179,pct:62},'3-Day PRIME Pass':{cost:597,pass:209,pct:65},'4-Day PRIME Pass':{cost:698,pass:229,pct:67},'5-Day PRIME Pass':{cost:797,pass:249,pct:69},'6-Day PRIME Pass':{cost:918,pass:279,pct:70},'7-Day PRIME Pass':{cost:1048,pass:309,pct:71}},
+    savingsTabs:[{l:'1-Day PRIME Pass'},{l:'2-Day PRIME Pass'},{l:'3-Day PRIME Pass'},{l:'4-Day PRIME Pass'},{l:'5-Day PRIME Pass',a:true},{l:'6-Day PRIME Pass'},{l:'7-Day PRIME Pass'}],
+    compare:{vs:'DISCOVER Pass',title:'Why upgrade from DISCOVER Pass?',subtitle:'PRIME includes everything in DISCOVER, plus premium experiences.',rows:[{f:'Top Landmarks',lo:'3',hi:'7',ex:'+4'},{f:'Attractions & Activities',lo:'100+',hi:'120+',ex:'+20'},{f:'Premium Experiences',lo:'\u2014',hi:'4 included',ex:'NEW'},{f:'Bosphorus Dinner Cruise',lo:'\u2717',hi:'\u2713'},{f:'Ottoman Hammam & Spa',lo:'\u2717',hi:'\u2713'},{f:'Bosphorus Sunset Cruise',lo:'\u2717',hi:'\u2713'},{f:'Turkish Breakfast Cruise',lo:'\u2717',hi:'\u2713'},{f:"Maiden's Tower Entry",lo:'\u2717',hi:'\u2713'}]},
+    details:{eyebrow:'What You Get',title:'Premium & Complete Istanbul Experience',desc:'Enjoy the premium experiences and all the treasures of the city.',
+      stats:[{icon:'\uD83C\uDFDB',label:'7 Top Landmarks'},{icon:'\uD83C\uDFAD',label:'120+ Attractions'},{icon:'\u2728',label:'4 Premium Experiences'}],
+      sections:[{title:'7 Top Landmarks',items:['Hagia Sophia Guided Tour with Skip-the-Line','Topkapi Palace Museum Guided Tour','Blue Mosque Entry with Guided Tour','Basilica Cistern Guided Tour','Galata Tower Hosted Entry with Audio Guide','Dolmabahce Palace Museum Skip-the-Line',"Maiden's Tower Skip-the-Line"]},{title:'4 Premium Experiences',items:['Bosphorus Evening Cruise: Turkish Dinner & Show','Ottoman Hammam Turkish Bath & Spa','Bosphorus Sunset Cruise with Audio Guide','Le Vapeur Magique \u2014 Morning Turkish Breakfast']},{title:'120+ Attractions & Activities',items:['Yildiz Palace Skip-the-Ticket-Line Entry','Spice Bazaar Turkish Delights & Herbal Tea','Legends of Istanbul Live Show','Whirling Dervishes Show at Abud Efendi','Camlica Tower Observation Deck','Istanbul Archaeological Museums','Turkish & Islamic Arts Museum','Authentic Turkish Cuisine Tasting','Ottoman Style Photo Shoot Experience','Istanbul Airport Shuttle Services','Rumeli Fortress Museum','Panorama 1453 History Museum']}]}
+  }
+};
+
+// Attractions for savings calculator
+const ATTRACTIONS=[
+  {name:'Hagia Sophia Guided Tour',price:35,included:['fast','discover','prime']},
+  {name:'Topkapi Palace Museum',price:30,included:['fast','discover','prime']},
+  {name:'Blue Mosque Guided Tour',price:24,included:['fast','discover','prime']},
+  {name:'Basilica Cistern Tour',price:28,included:['discover','prime']},
+  {name:'Galata Tower Entry',price:22,included:['discover','prime']},
+  {name:'Dolmabahce Palace',price:25,included:['discover','prime']},
+  {name:'Bosphorus Dinner Cruise',price:65,included:['prime']},
+  {name:'Ottoman Hammam & Spa',price:55,included:['prime']},
+  {name:'Bosphorus Sunset Cruise',price:45,included:['prime']},
+  {name:'Turkish Breakfast Cruise',price:35,included:['prime']},
+  {name:'Whirling Dervishes Show',price:30,included:['discover','prime']},
+  {name:'Camlica Tower Observation',price:18,included:['discover','prime']},
+  {name:'Turkish Cuisine Tasting',price:25,included:['fast','discover','prime']},
+  {name:'Airport Shuttle Transfer',price:20,included:['fast','discover','prime']},
+  {name:"Maiden's Tower Entry",price:20,included:['prime']},
+  {name:'Yildiz Palace Entry',price:15,included:['discover','prime']},
+  {name:'Legends of Istanbul Show',price:30,included:['discover','prime']},
+  {name:'Archaeological Museums',price:15,included:['discover','prime']}
+];
+
+// ── ITINERARY DATA ──
+const DAY_COLORS=['#D91B5C','#1468c8','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#ef4444'];
+const ITINERARY_DATA={
+  fast:{
+    1:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25},
+      {name:'Ottoman Style Photo Shoot Experience',duration:1,price:20}
+    ]]
+  },
+  discover:{
+    1:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1,price:22},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ]],
+    2:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:1.5,price:30}
+    ]],
+    3:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15}
+    ],[
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18},
+      {name:'Istanbul Archaeological Museums',duration:2,price:15},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ]],
+    4:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25},
+      {name:'Ottoman Style Photo Shoot Experience',duration:1,price:20}
+    ],[
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30}
+    ],[
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ],[
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18},
+      {name:'Istanbul Archaeological Museums',duration:2,price:15},
+      {name:'Yildiz Palace Skip-the-Ticket-Line Entry',duration:1.5,price:15},
+      {name:'Turkish & Islamic Arts Museum',duration:1.5,price:15}
+    ]],
+    5:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15}
+    ],[
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30}
+    ],[
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30},
+      {name:'Istanbul Archaeological Museums',duration:2,price:15}
+    ],[
+      {name:'Yildiz Palace Skip-the-Ticket-Line Entry',duration:1.5,price:15},
+      {name:'Turkish & Islamic Arts Museum',duration:1.5,price:15},
+      {name:'Ottoman Style Photo Shoot Experience',duration:1,price:20},
+      {name:'Istanbul Airport Shuttle Services',duration:1,price:20}
+    ]]
+  },
+  prime:{
+    1:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24}
+    ]],
+    2:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55}
+    ]],
+    3:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Bosphorus Sunset Cruise with Audio Guide',duration:2,price:45},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30}
+    ],[
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55}
+    ]],
+    4:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ],[
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Bosphorus Sunset Cruise with Audio Guide',duration:2,price:45},
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18}
+    ],[
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55},
+      {name:"Maiden's Tower Skip-the-Line",duration:1.5,price:20}
+    ]],
+    5:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15}
+    ],[
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Bosphorus Sunset Cruise with Audio Guide',duration:2,price:45},
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ],[
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55},
+      {name:"Maiden's Tower Skip-the-Line",duration:1.5,price:20}
+    ],[
+      {name:'Le Vapeur Magique \u2014 Morning Turkish Breakfast',duration:2.5,price:35},
+      {name:'Istanbul Archaeological Museums',duration:2,price:15},
+      {name:'Yildiz Palace Skip-the-Ticket-Line Entry',duration:1.5,price:15},
+      {name:'Istanbul Airport Shuttle Services',duration:1,price:20}
+    ]],
+    6:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15}
+    ],[
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30}
+    ],[
+      {name:'Bosphorus Sunset Cruise with Audio Guide',duration:2,price:45},
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ],[
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55},
+      {name:"Maiden's Tower Skip-the-Line",duration:1.5,price:20}
+    ],[
+      {name:'Le Vapeur Magique \u2014 Morning Turkish Breakfast',duration:2.5,price:35},
+      {name:'Istanbul Archaeological Museums',duration:2,price:15},
+      {name:'Turkish & Islamic Arts Museum',duration:1.5,price:15},
+      {name:'Istanbul Airport Shuttle Services',duration:1,price:20}
+    ]],
+    7:[[
+      {name:'Hagia Sophia Guided Tour with Skip-the-Line',duration:2,price:35},
+      {name:'Blue Mosque Entry with Guided Tour',duration:1,price:24},
+      {name:'Authentic Turkish Cuisine Tasting',duration:1.5,price:25}
+    ],[
+      {name:'Topkapi Palace Museum Guided Tour',duration:2,price:30},
+      {name:'Basilica Cistern Guided Tour',duration:1,price:28},
+      {name:'Spice Bazaar Turkish Delights & Herbal Tea',duration:1,price:15}
+    ],[
+      {name:'Galata Tower Hosted Entry with Audio Guide',duration:1.5,price:22},
+      {name:'Whirling Dervishes Show at Abud Efendi',duration:2,price:30},
+      {name:'Legends of Istanbul Live Show',duration:1.5,price:30}
+    ],[
+      {name:'Dolmabahce Palace Museum Skip-the-Line',duration:2,price:25},
+      {name:'Bosphorus Sunset Cruise with Audio Guide',duration:2,price:45},
+      {name:'Camlica Tower Observation Deck',duration:1.5,price:18}
+    ],[
+      {name:'Bosphorus Evening Cruise: Turkish Dinner & Show',duration:3,price:65},
+      {name:'Ottoman Hammam Turkish Bath & Spa',duration:2,price:55}
+    ],[
+      {name:"Maiden's Tower Skip-the-Line",duration:1.5,price:20},
+      {name:'Le Vapeur Magique \u2014 Morning Turkish Breakfast',duration:2.5,price:35},
+      {name:'Ottoman Style Photo Shoot Experience',duration:1,price:20}
+    ],[
+      {name:'Istanbul Archaeological Museums',duration:2,price:15},
+      {name:'Yildiz Palace Skip-the-Ticket-Line Entry',duration:1.5,price:15},
+      {name:'Turkish & Islamic Arts Museum',duration:1.5,price:15},
+      {name:'Istanbul Airport Shuttle Services',duration:1,price:20}
+    ]]
+  }
+};
+
+// ── BUILD COMPARE CARDS ──
+function buildCompareCards(){
+  const container=document.getElementById('compareCards');
+  let html='';
+  ['fast','discover','prime'].forEach(k=>{
+    const p=P[k],t=p.theme;
+    const isPopular=k==='discover';
+    const isPrime=k==='prime';
+    const startPrice=k==='fast'?49:k==='discover'?99:139;
+    const maxSavePct=Math.max(...Object.values(p.allSavings).map(s=>s.pct));
+    html+=`<div class="pass-card${isPopular?' popular':''}">`;
+    html+=`<div class="pass-card-top ${t}">`;
+    if(isPopular)html+=`<div class="pass-card-popular-tag">Most Popular</div>`;
+    if(isPrime)html+=`<div class="pass-card-crown">\uD83D\uDC51 PREMIUM CHOICE</div>`;
+    html+=`<span class="pass-card-badge ${t}">${p.badge}</span>`;
+    html+=`<div class="pass-card-name ${t}">${p.name}</div>`;
+    html+=`<div class="pass-card-sub">${p.sub}</div>`;
+    html+=`<div class="pass-card-price-row"><span class="pass-card-price-from">Starting from</span><span class="pass-card-price ${t}">\u20ac${startPrice}</span></div>`;
+    html+=`<div class="pass-card-savings-tag">Save up to ${maxSavePct}%</div>`;
+    html+=`</div>`;
+    // Stats
+    html+=`<div class="pass-card-stats">`;
+    p.details.stats.forEach(s=>{html+=`<div class="pass-card-stat"><div class="pass-card-stat-icon">${s.icon}</div><div class="pass-card-stat-label">${s.label}</div></div>`;});
+    html+=`</div>`;
+    // Items
+    html+=`<div class="pass-card-body">`;
+    p.details.sections.forEach((sec,si)=>{
+      const maxShow=2;
+      html+=`<div class="pass-card-section-title">${sec.title}</div><div class="pass-card-items">`;
+      const showItems=sec.items.slice(0,maxShow);
+      showItems.forEach(it=>{html+=`<div class="pass-card-item"><div class="pass-card-item-check ${t}">\u2713</div><span>${it}</span></div>`;});
+      if(sec.items.length>maxShow)html+=`<div class="pass-card-item" style="color:#9a8090;font-style:italic">+${sec.items.length-maxShow} more included</div>`;
+      html+=`</div>`;
+      html+=`<button class="pass-card-view-all ${t}" onclick="openModal('${k}',${si})">View all ${sec.title} \u2192</button>`;
+    });
+    html+=`</div>`;
+    // CTA
+    html+=`<div class="pass-card-cta"><a href="buy-now.html?pass=${k}" class="pass-card-cta-btn ${t}">Buy ${p.name} \u2192</a><div class="pass-card-cta-sub">\uD83D\uDD12 Secure checkout \u00b7 Instant delivery \u00b7 Free cancellation</div></div>`;
+    html+=`</div>`;
+  });
+  container.innerHTML=html;
+}
+
+// ── BUILD COMPARISON TABLE ──
+function buildComparisonTable(){
+  const features=[
+    {f:'Top Landmarks',fast:'2',discover:'3',prime:'7'},
+    {f:'Attractions & Activities',fast:'4',discover:'100+',prime:'120+'},
+    {f:'Hagia Sophia Skip-the-Line',fast:true,discover:true,prime:true},
+    {f:'Topkapi Palace Museum',fast:true,discover:true,prime:true},
+    {f:'Blue Mosque Guided Tour',fast:true,discover:true,prime:true},
+    {f:'Basilica Cistern Tour',fast:false,discover:true,prime:true},
+    {f:'Galata Tower Entry',fast:false,discover:true,prime:true},
+    {f:'Dolmabahce Palace',fast:false,discover:true,prime:true},
+    {f:"Maiden's Tower Entry",fast:false,discover:false,prime:true},
+    {f:'Guided Tours',fast:false,discover:true,prime:true},
+    {f:'Premium Experiences',fast:false,discover:false,prime:'4 included'},
+    {f:'Bosphorus Dinner Cruise',fast:false,discover:false,prime:true},
+    {f:'Ottoman Hammam & Spa',fast:false,discover:false,prime:true},
+    {f:'Airport Shuttle',fast:true,discover:true,prime:true},
+    {f:'Multi-day Flexibility',fast:'1 day',discover:'1\u20135 days',prime:'1\u20137 days'},
+    {f:'Starting Price',fast:'\u20ac49',discover:'\u20ac99',prime:'\u20ac139'},
+    {f:'Max Savings',fast:'46%',discover:'68%',prime:'71%'}
+  ];
+  let html='<thead><tr><th>Feature</th><th class="th-fast">FAST Pass</th><th class="th-discover">DISCOVER Pass</th><th class="th-prime">PRIME Pass</th></tr></thead><tbody>';
+  features.forEach(row=>{
+    html+=`<tr><td>${row.f}</td>`;
+    ['fast','discover','prime'].forEach(k=>{
+      const v=row[k];
+      if(v===true)html+=`<td><span class="check">\u2713</span></td>`;
+      else if(v===false)html+=`<td><span class="cross">\u2717</span></td>`;
+      else html+=`<td><span class="val-badge ${k}">${v}</span></td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody>`;
+  // CTA row
+  html+=`<tfoot><tr class="cmp-table-cta-row"><td></td><td><a href="buy-now.html?pass=fast" class="cmp-table-cta-btn fast">Buy FAST \u2192</a></td><td><a href="buy-now.html?pass=discover" class="cmp-table-cta-btn discover">Buy DISCOVER \u2192</a></td><td><a href="buy-now.html?pass=prime" class="cmp-table-cta-btn prime">Buy PRIME \u2192</a></td></tr></tfoot>`;
+  document.getElementById('cmpTable').innerHTML=html;
+}
+
+// ── SAVINGS CALCULATOR ──
+function buildSavingsCalculator(){
+  const itemsEl=document.getElementById('calcItems');
+  let html='';
+  ATTRACTIONS.forEach((a,i)=>{
+    html+=`<label class="calc-item"><input type="checkbox" data-idx="${i}" onchange="updateCalc()"${i<6?' checked':''}><span class="calc-item-name">${a.name}</span><span class="calc-item-price">\u20ac${a.price}</span></label>`;
+  });
+  itemsEl.innerHTML=html;
+  updateCalc();
+}
+
+function updateCalc(){
+  const checked=Array.from(document.querySelectorAll('#calcItems input:checked')).map(cb=>ATTRACTIONS[cb.dataset.idx]);
+  const resultEl=document.getElementById('calcResult');
+  if(checked.length===0){
+    resultEl.innerHTML='<div class="calc-empty-msg">Select attractions above to see your savings</div>';
+    return;
+  }
+  const total=checked.reduce((s,a)=>s+a.price,0);
+  // Calculate savings for each pass
+  const passes=[
+    {k:'fast',name:P.fast.name,price:49,theme:'fast'},
+    {k:'discover',name:P.discover.name,price:179,theme:'discover'},
+    {k:'prime',name:P.prime.name,price:249,theme:'prime'}
+  ];
+  let html=`<div class="calc-result-title">Your Selected Attractions</div>`;
+  html+=`<div class="calc-result-total"><span class="calc-result-label">Individual ticket total</span><span class="calc-result-val">\u20ac${total}</span></div>`;
+  html+=`<div class="calc-result-title" style="margin-top:8px">Your Savings With Each Pass</div>`;
+  let bestIdx=-1,bestSave=0;
+  passes.forEach((ps,i)=>{
+    const includedCount=checked.filter(a=>a.included.includes(ps.k)).length;
+    const includedTotal=checked.filter(a=>a.included.includes(ps.k)).reduce((s,a)=>s+a.price,0);
+    const saving=includedTotal-ps.price;
+    if(saving>bestSave){bestSave=saving;bestIdx=i;}
+  });
+  passes.forEach((ps,i)=>{
+    const includedCount=checked.filter(a=>a.included.includes(ps.k)).length;
+    const includedTotal=checked.filter(a=>a.included.includes(ps.k)).reduce((s,a)=>s+a.price,0);
+    const saving=includedTotal-ps.price;
+    const pct=includedTotal>0?Math.round((saving/includedTotal)*100):0;
+    const isBest=i===bestIdx&&saving>0;
+    html+=`<div class="calc-pass-row${isBest?' best':''}"><div class="calc-pass-info"><div class="calc-pass-name">${ps.name}</div><div class="calc-pass-price">${includedCount}/${checked.length} attractions included \u00b7 \u20ac${ps.price}</div></div>`;
+    if(saving>0){
+      html+=`<div class="calc-pass-saving"><div class="calc-pass-save-amount">\u20ac${saving}</div><div class="calc-pass-save-pct">${pct}% off</div></div>`;
+    }else{
+      html+=`<div class="calc-pass-saving"><div style="font-size:11px;color:#9a8090">Not all included</div></div>`;
+    }
+    html+=`</div>`;
+  });
+  if(bestIdx>=0){
+    html+=`<a href="buy-now.html?pass=${passes[bestIdx].k}" style="display:block;text-align:center;margin-top:12px;padding:12px;border-radius:10px;background:#22c55e;color:#fff;font-weight:700;font-size:14px;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s">Get ${passes[bestIdx].name} & Save \u20ac${bestSave} \u2192</a>`;
+  }
+  resultEl.innerHTML=html;
+}
+
+// ── ANIMATED COUNTERS ──
+function animateCounters(){
+  const counters=document.querySelectorAll('.social-counter-num');
+  const observer=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const el=entry.target;
+        const target=parseInt(el.dataset.target);
+        const duration=1500;
+        const start=performance.now();
+        function tick(now){
+          const elapsed=now-start;
+          const progress=Math.min(elapsed/duration,1);
+          const eased=1-Math.pow(1-progress,3);
+          const current=Math.round(eased*target);
+          el.textContent=current.toLocaleString()+'+';
+          if(progress<1)requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+        observer.unobserve(el);
+      }
+    });
+  },{threshold:0.3});
+  counters.forEach(c=>observer.observe(c));
+}
+
+// ── EXAMPLE ITINERARY ──
+let itinPass='discover',itinDays=3;
+
+function buildItinerarySection(){
+  // Pass tabs
+  const tabsEl=document.getElementById('itinPassTabs');
+  let tabsHtml='';
+  [{k:'fast',label:'FAST Pass'},{k:'discover',label:'DISCOVER Pass'},{k:'prime',label:'PRIME Pass'}].forEach(p=>{
+    const active=p.k===itinPass?'active-'+p.k:'';
+    tabsHtml+=`<button class="itin-pass-tab ${active}" onclick="selectItineraryPass('${p.k}')">${p.label}</button>`;
+  });
+  tabsEl.innerHTML=tabsHtml;
+  renderItineraryDuration();
+  renderItinerary();
+}
+
+function selectItineraryPass(k){
+  itinPass=k;
+  if(k==='fast')itinDays=1;
+  else if(k==='discover')itinDays=3;
+  else itinDays=5;
+  // Update tabs
+  document.querySelectorAll('.itin-pass-tab').forEach(b=>{
+    b.className='itin-pass-tab';
+    if(b.textContent.toLowerCase().includes(k))b.classList.add('active-'+k);
+  });
+  renderItineraryDuration();
+  renderItinerary();
+}
+
+function renderItineraryDuration(){
+  const el=document.getElementById('itinDurSelector');
+  if(itinPass==='fast'){el.innerHTML='';return;}
+  const maxDays=itinPass==='discover'?5:7;
+  let html='';
+  for(let d=1;d<=maxDays;d++){
+    const active=d===itinDays?`active ${itinPass}`:'';
+    html+=`<button class="itin-dur-btn ${active}" onclick="selectItineraryDuration(${d})">${d} Day${d>1?'s':''}</button>`;
+  }
+  el.innerHTML=html;
+}
+
+function selectItineraryDuration(d){
+  itinDays=d;
+  document.querySelectorAll('.itin-dur-btn').forEach(b=>{
+    b.className='itin-dur-btn';
+    if(b.textContent.startsWith(d+' '))b.classList.add('active',itinPass);
+  });
+  renderItinerary();
+}
+
+function renderItinerary(){
+  const data=ITINERARY_DATA[itinPass]?.[itinDays];
+  if(!data){document.getElementById('itinCard').innerHTML='<div style="padding:40px;text-align:center;color:#9a8090">No itinerary available</div>';return;}
+  let totalPrice=0;
+  let html='';
+  data.forEach((dayAttractions,di)=>{
+    const dayNum=di+1;
+    const color=DAY_COLORS[di%DAY_COLORS.length];
+    const isOpen=di===0;
+    const dayTotal=dayAttractions.reduce((s,a)=>s+a.price,0);
+    totalPrice+=dayTotal;
+    html+=`<div class="itin-day${isOpen?' open':''}">`;
+    html+=`<div class="itin-day-header" onclick="toggleItineraryDay(this)">`;
+    html+=`<span class="itin-day-line" style="background:${color}"></span>`;
+    html+=`<span class="itin-day-label" style="color:${color}">Day ${dayNum}</span>`;
+    html+=`<span class="itin-day-count">${dayAttractions.length} attraction${dayAttractions.length>1?'s':''}</span>`;
+    html+=`<span class="itin-day-chevron">\u25BC</span>`;
+    html+=`</div>`;
+    html+=`<div class="itin-day-body"><div class="itin-day-body-inner">`;
+    dayAttractions.forEach((a,ai)=>{
+      const gIdx=(di*5+ai)%G.length;
+      html+=`<div class="itin-attr">`;
+      html+=`<div class="itin-attr-thumb" style="background:${G[gIdx]}"></div>`;
+      html+=`<div class="itin-attr-info"><div class="itin-attr-name">${a.name}</div><div class="itin-attr-duration">${a.duration} hrs</div></div>`;
+      html+=`<div class="itin-attr-price"><div class="itin-attr-original">\u20ac${a.price}</div><div class="itin-attr-included">Included</div></div>`;
+      html+=`</div>`;
+    });
+    html+=`</div></div></div>`;
+  });
+  // Total bar
+  const passPrice=itinPass==='fast'?P.fast.adultPrice:(itinPass==='discover'?(P.discover.durations.find(d=>d.l===itinDays+' Day'+(itinDays>1?'s':''))||{v:P.discover.adultPrice}).v:(P.prime.durations.find(d=>d.l===itinDays+' Day'+(itinDays>1?'s':''))||{v:P.prime.adultPrice}).v);
+  html+=`<div class="itin-total-bar">`;
+  html+=`<div class="itin-total-left"><div class="itin-total-label">Total value of this itinerary</div>`;
+  html+=`<div class="itin-total-value"><del>\u20ac${totalPrice}</del><span class="included">\u2192 Included in ${P[itinPass].name}</span></div></div>`;
+  html+=`<a href="buy-now.html?pass=${itinPass}" class="itin-total-cta ${itinPass}">Get This Pass \u2192</a>`;
+  html+=`</div>`;
+  document.getElementById('itinCard').innerHTML=html;
+}
+
+function toggleItineraryDay(header){
+  header.parentElement.classList.toggle('open');
+}
+
+// ── MODAL ──
+function openModal(k,secIdx){
+  const sec=P[k].details.sections[secIdx];
+  document.getElementById('modalTitle').textContent=sec.title;
+  const body=document.getElementById('modalBody');body.innerHTML='';
+  const allItems=sec.items.slice();if(sec.or)allItems.push(sec.or);
+  allItems.forEach((it,i)=>{body.innerHTML+=`<div class="modal-item"><div class="modal-item-img" style="background:${G[i%G.length]}"></div><div class="modal-item-name">${it}</div></div>`;});
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+
+// ── TESTIMONIALS SLIDER ──
+let tmIdx=0;
+const tmTrack=document.getElementById('tmSliderTrack');
+const tmCards=tmTrack.querySelectorAll('.testimonials-video-card');
+const tmDotsEl=document.getElementById('tmDots');
+function getTmVisible(){const w=tmTrack.parentElement.offsetWidth;const cardW=tmCards[0]?.offsetWidth||180;return Math.floor((w+16)/(cardW+16))||1;}
+function getTmPages(){return Math.max(1,tmCards.length-getTmVisible()+1);}
+function buildTmDots(){tmDotsEl.innerHTML='';const pages=getTmPages();for(let i=0;i<pages;i++){const d=document.createElement('div');d.className='testimonials-dot'+(i===tmIdx?' active':'');tmDotsEl.appendChild(d);}}
+function slideTm(dir){const pages=getTmPages();tmIdx=Math.max(0,Math.min(tmIdx+dir,pages-1));updateTmSlider();}
+function updateTmSlider(){const cardW=tmCards[0]?.offsetWidth||180;tmTrack.style.transform=`translateX(-${tmIdx*(cardW+16)}px)`;buildTmDots();}
+buildTmDots();
+window.addEventListener('resize',()=>{tmIdx=Math.min(tmIdx,getTmPages()-1);updateTmSlider();});
+let tmTouchX=0;
+tmTrack.addEventListener('touchstart',e=>{tmTouchX=e.touches[0].clientX},{passive:true});
+tmTrack.addEventListener('touchend',e=>{const diff=tmTouchX-e.changedTouches[0].clientX;if(Math.abs(diff)>40){slideTm(diff>0?1:-1);}},{passive:true});
+
+// ── STICKY MOBILE CTA ──
+const stickyEl=document.getElementById('stickyMobileCta');
+function checkSticky(){
+  if(window.innerWidth>768){stickyEl.classList.remove('visible');document.body.classList.remove('has-sticky-cta');return}
+  const scrollPct=window.scrollY/(document.documentElement.scrollHeight-window.innerHeight);
+  if(scrollPct>0.15){stickyEl.classList.add('visible');document.body.classList.add('has-sticky-cta')}
+  else{stickyEl.classList.remove('visible');document.body.classList.remove('has-sticky-cta')}
+}
+window.addEventListener('scroll',checkSticky,{passive:true});
+window.addEventListener('resize',checkSticky);
+
+// ── INIT ──
+buildCompareCards();
+buildComparisonTable();
+buildItinerarySection();
+buildSavingsCalculator();
+animateCounters();
+checkSticky();
+</script>
+</body>
+</html>
