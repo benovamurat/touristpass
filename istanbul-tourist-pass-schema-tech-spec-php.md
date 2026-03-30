@@ -1,11 +1,11 @@
 # Istanbul Tourist Pass® — Schema Markup Tech Spec
 
-> **Versiyon:** 3.0 (PHP Developer Edition)  
+> **Versiyon:** 3.1 (Language-Agnostic Edition)  
 > **Tarih:** 30 Mart 2026  
 > **Kapsam:** v26.istanbultouristpass.com  
 > **Format:** JSON-LD via `<script type="application/ld+json">`  
-> **Hedef Kitle:** PHP/Laravel Backend & Frontend Developer  
-> **Syntax:** Laravel Blade + PHP — kendi framework'ünüze uyarlayın
+> **Hedef Kitle:** Backend & Frontend Developer (herhangi bir stack)  
+> **Template Syntax:** `{{ variable }}` — kendi framework'ünüze çevirin
 
 ---
 
@@ -22,8 +22,19 @@
 9. [FAQ Sayfası](#9-faq-sayfası)
 10. [Pass & Fiyatlar](#10-pass--fiyatlar)
 11. [Reviews Sayfası](#11-reviews-sayfası)
-12. [Diğer Sayfa Tipleri (About, Contact, How It Works, vs.)](#12-diğer-sayfa-tipleri)
-13. [Implementasyon Checklist](#13-implementasyon-checklist)
+12. [About Sayfası](#12-about-sayfası)
+13. [Contact Sayfası](#13-contact-sayfası)
+14. [How It Works](#14-how-it-works-sayfası)
+15. [Compare Passes](#15-compare-passes-sayfası)
+16. [Download App](#16-download-app-sayfası)
+17. [Plan & Save](#17-plan--save-sayfası)
+18. [What You Get](#18-what-you-get-sayfası)
+19. [Free Digital Guidebook](#19-free-digital-guidebook-sayfası)
+20. [Group Request](#20-group-request-sayfası)
+21. [Special Offer & Service Sayfaları](#21-special-offer--service-sayfaları)
+22. [Partner & Affiliate](#22-partner--affiliate-sayfaları)
+23. [Legal Sayfaları](#23-legal-sayfaları)
+24. [Implementasyon Checklist](#24-implementasyon-checklist)
 
 ---
 
@@ -31,349 +42,163 @@
 
 ### 1.1 Bileşen Mimarisi
 
-Schema'lar **3 katmanda** üretilir. Her katman ayrı bir PHP sınıfı veya helper olmalıdır:
+Schema'lar **3 katmanda** üretilir. Her katman ayrı bir fonksiyon veya bileşen olmalıdır:
 
 ```
 ┌─────────────────────────────────────────────────┐
 │  KATMAN 1: Global Schemas (her sayfada)         │
-│  → SchemaService::globals($page)                │
+│  → generateGlobalSchemas(page)                  │
 │  → Organization, WebSite, BreadcrumbList        │
 ├─────────────────────────────────────────────────┤
 │  KATMAN 2: Sayfa Tipi Schemas                   │
-│  → SchemaService::forPage($pageType, $data)     │
+│  → generatePageSchemas(pageType, pageData)      │
 │  → Product, FAQPage, BlogPosting, Event vs.     │
 ├─────────────────────────────────────────────────┤
 │  KATMAN 3: Widget/Section Schemas (opsiyonel)   │
-│  → SchemaService::reviews($reviews)             │
-│  → SchemaService::video($video)                 │
+│  → generateReviewSchema(reviews)                │
+│  → generateVideoSchema(video)                   │
 │  → Sayfa içi bileşenlere bağlı                  │
 └─────────────────────────────────────────────────┘
 ```
 
-### 1.2 Dosya Yapısı (Laravel Önerisi)
+### 1.2 @id Referans Sistemi
 
-```
-app/
-├── Services/
-│   └── SchemaService.php           # Ana servis sınıfı
-├── Helpers/
-│   └── SchemaHelpers.php           # safe_json, iso_duration, vb.
-├── Config/
-│   └── schema.php                  # Sabit @id URI'ler, hreflang map
-resources/
-├── views/
-│   ├── layouts/
-│   │   └── app.blade.php           # <head> içinde schema render
-│   └── components/
-│       └── schemas/
-│           ├── globals.blade.php   # Katman 1
-│           ├── breadcrumb.blade.php
-│           ├── attraction.blade.php
-│           ├── blog-posting.blade.php
-│           ├── faq-page.blade.php
-│           ├── product.blade.php
-│           └── review.blade.php
-```
+Her entity'nin benzersiz bir `@id` URI'si olmalıdır. Tam tanım **bir kez** yapılır, diğer sayfalarda sadece referans verilir.
 
-### 1.3 SchemaService Ana Sınıf
+| Entity | @id URI |
+|--------|---------|
+| Organization | `https://www.istanbultouristpass.com/#organization` |
+| WebSite | `https://www.istanbultouristpass.com/#website` |
+| Ana Ürün | `https://www.istanbultouristpass.com/#product` |
+| Her sayfa | `https://www.istanbultouristpass.com/{slug}/#webpage` |
+| Her attraction | `https://www.istanbultouristpass.com/{slug}/#attraction` |
+| Her blog yazısı | `https://www.istanbultouristpass.com/blog/{cat}/{slug}/#article` |
+| Her yazar | `https://www.istanbultouristpass.com/authors/{slug}/#person` |
 
-```php
-<?php
+### 1.3 Dinamik Değişken Notasyonu
 
-namespace App\Services;
+Bu dökümandaki template şablonlarda `{{ variable }}` kullanılmıştır. Gerçek çıktı örneklerinde ise render edilmiş nihai JSON gösterilmiştir. Kendi stack'inize göre uyarlayın.
 
-use App\Helpers\SchemaHelpers;
+### 1.4 JSON Güvenliği
 
-class SchemaService
-{
-    /**
-     * Verilen schema array'ini <script type="application/ld+json"> olarak render eder.
-     * Null/boş schema'ları sessizce atlar.
-     */
-    public static function render(?array $schema): string
-    {
-        if (empty($schema)) {
-            return '';
-        }
+Tüm kullanıcı kaynaklı string'ler (`name`, `description`, `reviewBody`) JSON-LD'ye basılmadan önce:
 
-        $json = json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+- HTML tag'leri temizlenmeli (`strip_tags`)
+- JSON-breaking karakterler escape edilmeli (`"`, `\n`, `\r`)
+- Çoklu boşluklar tek boşluğa indirilmeli
+- Maksimum 5.000 karakter ile sınırlandırılmalı (Google önerisi)
 
-        if ($json === false) {
-            // JSON encode hatası — log'la ama sayfayı bozma
-            \Log::warning('Schema JSON encode failed', ['schema' => $schema]);
-            return '';
-        }
+Bu işlemi yapan bir `safeJson(value, maxLength)` helper fonksiyonu yazmanız önerilir.
 
-        return '<script type="application/ld+json">' . $json . '</script>';
-    }
+### 1.5 Sabit Değerler Referansı
 
-    /**
-     * Birden fazla schema'yı tek seferde render eder.
-     * Null değerler otomatik filtrelenir.
-     */
-    public static function renderAll(array $schemas): string
-    {
-        return collect($schemas)
-            ->filter()  // null/empty olanları çıkar
-            ->map(fn($s) => self::render($s))
-            ->implode("\n");
-    }
-}
-```
+Aşağıdaki değerler merkezi bir config/ayar dosyasından çekilmeli, hardcode edilmemelidir:
 
-### 1.4 SchemaHelpers
+| Anahtar | Değer |
+|---|---|
+| `base_url` | `https://www.istanbultouristpass.com` |
+| `site_name` | `Istanbul Tourist Pass` |
+| `product_name` | `Istanbul Tourist Pass®` |
+| `currency` | `EUR` |
+| `contact_email` | `contact@istanbultouristpass.com` |
+| `contact_phone` | `+908503048726` |
+| `whatsapp_url` | `https://wa.me/905303852026` |
+| `logo_url` | `https://www.istanbultouristpass.com/images/itp-logo.svg` |
+| `og_image_url` | `https://www.istanbultouristpass.com/images/itp-og.jpg` |
+| `founding_date` | `2015` |
+| `default_author` | `ITP Editorial Team` |
+| `return_days` | `30` |
+| `ios_app_url` | `https://apps.apple.com/tr/app/istanbul-tourist-pass/id6535683117` |
+| `android_app_url` | `https://play.google.com/store/apps/details?id=com.istanbultouristpass.app` |
+| `social_links` | Facebook, Instagram, YouTube, TikTok, TripAdvisor URL'leri |
+| `supported_languages` | English, Turkish, German, Russian, French, Spanish, Italian, Arabic |
 
-```php
-<?php
+### 1.6 hreflang Dil Kodu Eşleştirmesi
 
-namespace App\Helpers;
-
-class SchemaHelpers
-{
-    /**
-     * JSON-LD için güvenli string üretir.
-     * HTML tag'leri temizler, JSON-kıran karakterleri escape eder.
-     */
-    public static function safeJson(?string $value, int $maxLength = 5000): string
-    {
-        if (empty($value)) {
-            return '';
-        }
-
-        $value = strip_tags($value);
-        $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
-        $value = preg_replace('/\s+/', ' ', $value); // çoklu boşlukları tek boşluğa
-        $value = trim($value);
-
-        return mb_substr($value, 0, $maxLength);
-    }
-
-    /**
-     * Saniyeyi ISO 8601 duration formatına çevirir.
-     * 120 → "PT2M0S", 5400 → "PT1H30M0S"
-     */
-    public static function isoDuration(?int $seconds): ?string
-    {
-        if (!$seconds || $seconds <= 0) {
-            return null;
-        }
-
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        if ($hours > 0) {
-            return "PT{$hours}H{$minutes}M{$secs}S";
-        }
-        return "PT{$minutes}M{$secs}S";
-    }
-
-    /**
-     * Okuma süresi hesaplar (dakika).
-     * Ortalama 200 kelime/dk baz alınır.
-     */
-    public static function readingTime(?int $wordCount): ?int
-    {
-        if (!$wordCount || $wordCount <= 0) {
-            return null;
-        }
-        return max(1, (int) round($wordCount / 200));
-    }
-}
-```
-
-### 1.5 Config Dosyası (`config/schema.php`)
-
-```php
-<?php
-
-return [
-    'base_url'          => env('APP_URL', 'https://www.istanbultouristpass.com'),
-    'site_name'         => 'Istanbul Tourist Pass',
-    'product_name'      => 'Istanbul Tourist Pass®',
-    'currency'          => 'EUR',
-    'contact_email'     => 'contact@istanbultouristpass.com',
-    'contact_phone'     => '+908503048726',
-    'whatsapp_url'      => 'https://wa.me/905303852026',
-    'logo_url'          => 'https://www.istanbultouristpass.com/images/itp-logo.svg',
-    'og_image_url'      => 'https://www.istanbultouristpass.com/images/itp-og.jpg',
-    'founding_date'     => '2015',
-    'default_author'    => 'ITP Editorial Team',
-    'return_days'       => 30,
-
-    'social_links' => [
-        'https://www.facebook.com/istanbultouristpass',
-        'https://www.instagram.com/istanbultouristpass',
-        'https://www.youtube.com/@istanbultouristpass',
-        'https://www.tiktok.com/@istanbultouristpass',
-        'https://www.tripadvisor.com/AttractionProductReview-g293974-d12464056-Istanbul_Tourist_Pass',
-    ],
-
-    'supported_languages' => ['English','Turkish','German','Russian','French','Spanish','Italian','Arabic'],
-
-    'ios_app_url'     => 'https://apps.apple.com/tr/app/istanbul-tourist-pass/id6535683117',
-    'android_app_url' => 'https://play.google.com/store/apps/details?id=com.istanbultouristpass.app',
-
-    'hreflang_map' => [
-        'en' => ['hreflang' => 'en',      'prefix' => ''],
-        'es' => ['hreflang' => 'es',      'prefix' => '/es'],
-        'it' => ['hreflang' => 'it',      'prefix' => '/it'],
-        'fr' => ['hreflang' => 'fr',      'prefix' => '/fr'],
-        'de' => ['hreflang' => 'de',      'prefix' => '/de'],
-        'ru' => ['hreflang' => 'ru',      'prefix' => '/ru'],
-        'tr' => ['hreflang' => 'tr',      'prefix' => '/tr'],
-        'ar' => ['hreflang' => 'ar',      'prefix' => '/ar'],
-        'bg' => ['hreflang' => 'bg',      'prefix' => '/bg'],
-        'cn' => ['hreflang' => 'zh-Hans', 'prefix' => '/cn'],
-        'gr' => ['hreflang' => 'el',      'prefix' => '/gr'],
-        'hr' => ['hreflang' => 'hr',      'prefix' => '/hr'],
-        'hu' => ['hreflang' => 'hu',      'prefix' => '/hu'],
-        'id' => ['hreflang' => 'id',      'prefix' => '/id'],
-        'il' => ['hreflang' => 'he',      'prefix' => '/il'],
-        'in' => ['hreflang' => 'hi',      'prefix' => '/in'],
-        'ir' => ['hreflang' => 'fa',      'prefix' => '/ir'],
-        'jp' => ['hreflang' => 'ja',      'prefix' => '/jp'],
-        'kr' => ['hreflang' => 'ko',      'prefix' => '/kr'],
-        'mk' => ['hreflang' => 'mk',      'prefix' => '/mk'],
-        'pk' => ['hreflang' => 'ur',      'prefix' => '/pk'],
-        'pl' => ['hreflang' => 'pl',      'prefix' => '/pl'],
-        'pt' => ['hreflang' => 'pt',      'prefix' => '/pt'],
-        'ro' => ['hreflang' => 'ro',      'prefix' => '/ro'],
-        'tw' => ['hreflang' => 'zh-Hant', 'prefix' => '/tw'],
-    ],
-];
-```
-
-### 1.6 Fallback Kuralları (Genel)
-
-| Durum | Fallback | Kod Örneği |
+| Site kodu | hreflang kodu | URL prefix |
 |---|---|---|
-| `image` alanı boş | Site logosunu bas | `$attraction->featured_image_url ?? config('schema.og_image_url')` |
-| `description` alanı boş | `name` kullan veya alanı **çıkar** | `if (!empty($desc)) { $schema['description'] = $desc; }` |
-| `price` null veya 0 | Product schema'sını **hiç basma** | `if ($price > 0) { ... }` |
-| `reviewCount` = 0 | `aggregateRating` bloğunu **çıkar** | `if ($reviewCount > 0) { ... }` |
-| `author` bilgisi yok | Default author kullan | `$author->name ?? config('schema.default_author')` |
-| `datePublished` yok | Alanı tamamen çıkar | `if ($date) { $schema['datePublished'] = $date; }` |
-| `geo` koordinatları yok | `geo` bloğunu çıkar | `if ($lat && $lng) { ... }` |
-| Sayfa draft/unpublished | Schema **hiç basılmamalı** | Controller'da kontrol et |
+| en | `en` | *(yok — default)* |
+| es | `es` | `/es` |
+| it | `it` | `/it` |
+| fr | `fr` | `/fr` |
+| de | `de` | `/de` |
+| ru | `ru` | `/ru` |
+| tr | `tr` | `/tr` |
+| ar | `ar` | `/ar` |
+| bg | `bg` | `/bg` |
+| cn | `zh-Hans` | `/cn` |
+| gr | `el` | `/gr` |
+| hr | `hr` | `/hr` |
+| hu | `hu` | `/hu` |
+| id | `id` | `/id` |
+| il | `he` | `/il` |
+| in | `hi` | `/in` |
+| ir | `fa` | `/ir` |
+| jp | `ja` | `/jp` |
+| kr | `ko` | `/kr` |
+| mk | `mk` | `/mk` |
+| pk | `ur` | `/pk` |
+| pl | `pl` | `/pl` |
+| pt | `pt` | `/pt` |
+| ro | `ro` | `/ro` |
+| tw | `zh-Hant` | `/tw` |
+
+> **⚠️ DİKKAT:** English prefix boş string olduğundan, naif URL birleştirme `https://...com//slug` gibi çift slash üretebilir. URL birleştirmede trim koruması ekleyin.
+
+### 1.7 Fallback Kuralları (Genel)
+
+| Durum | Fallback Davranışı |
+|---|---|
+| `image` alanı boş | Site logosunu / OG image'ı bas |
+| `description` alanı boş | `name` alanını kullan veya alanı tamamen **çıkar** |
+| `price` null veya 0 | Product schema'sının **tamamını basma** |
+| `reviewCount` = 0 | `aggregateRating` bloğunun **tamamını çıkar** |
+| `author` bilgisi yok | Default author kullan (config'den) |
+| `datePublished` yok | Alanı tamamen çıkar (yanlış tarih basmaktan iyidir) |
+| `geo` koordinatları yok | `geo` bloğunu tamamen çıkar |
+| Sayfa draft/unpublished | Schema **hiç basılmamalı** |
 
 > **Altın Kural:** Eksik veriyle bozuk JSON basmaktansa, o schema bloğunu hiç basmamak daha iyidir. Google bozuk JSON-LD'yi penalize eder.
-
-### 1.7 Layout'ta Kullanım (`app.blade.php`)
-
-```html
-<head>
-    <meta charset="utf-8">
-    <title>{{ $metaTitle }}</title>
-    
-    {{-- hreflang --}}
-    @include('components.schemas.hreflang', ['slug' => $page->slug ?? ''])
-    
-    {{-- Schema markup --}}
-    {!! \App\Services\SchemaService::renderAll($schemas ?? []) !!}
-</head>
-```
-
-**Controller'da:**
-
-```php
-public function show(Attraction $attraction)
-{
-    $schemas = array_filter([
-        // Katman 1: Global
-        SchemaService::organization(),      // sadece anasayfada tam, diğerlerinde null döner
-        SchemaService::website(),           // sadece anasayfada
-        SchemaService::breadcrumb($this->getBreadcrumbs($attraction)),
-
-        // Katman 2: Sayfa tipi
-        SchemaService::touristAttraction($attraction),
-        SchemaService::productOffer($attraction),
-        $attraction->is_guided_tour ? SchemaService::event($attraction) : null,
-        $attraction->faqs->count() > 0 ? SchemaService::faqPage($attraction->faqs) : null,
-
-        // Katman 3: Widget
-        $attraction->approved_reviews_count > 0 ? SchemaService::reviews($attraction) : null,
-        $attraction->video_url ? SchemaService::video($attraction) : null,
-    ]);
-
-    return view('attractions.show', compact('attraction', 'schemas'));
-}
-```
 
 ---
 
 ## 2. Global Bileşenler (Her Sayfada)
 
+> Bu bileşenler layout/head template'inde **bir kez** tanımlanır ve tüm sayfalara otomatik eklenir.
+
 ### 2.1 Organization — Sadece Anasayfada Tam Tanım
 
-**PHP Builder:**
+```
+📊 VERİ KAYNAĞI: Merkezi config / ayarlar
+🔄 GÜNCELLEME: Nadiren değişir — deploy-time cache'lenebilir
+⚠️ KURAL: Tam tanım YALNIZCA anasayfada. Diğer sayfalar @id referansı ile erişir.
+```
 
-```php
-public static function organization(): ?array
+**Template:**
+
+```json
 {
-    // Sadece anasayfada tam tanım yapılır
-    // Diğer sayfalar @id referansı ile erişir (otomatik — Google birleştirir)
-    if (!request()->is('/')) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    return [
-        '@context'     => 'https://schema.org',
-        '@type'        => 'Organization',
-        '@id'          => $cfg['base_url'] . '/#organization',
-        'name'         => $cfg['site_name'],
-        'alternateName'=> ['ITP', 'Istanbul Tourist Pass®'],
-        'url'          => $cfg['base_url'],
-        'logo'         => [
-            '@type'  => 'ImageObject',
-            'url'    => $cfg['logo_url'],
-            'width'  => 300,
-            'height' => 60,
-        ],
-        'image'        => $cfg['og_image_url'],
-        'description'  => SchemaHelpers::safeJson(
-            "Istanbul's One & Only Digital Sightseeing Pass. Save over 65% on 120+ attractions."
-        ),
-        'foundingDate' => $cfg['founding_date'],
-        'email'        => $cfg['contact_email'],
-        'telephone'    => $cfg['contact_phone'],
-        'address'      => [
-            '@type'           => 'PostalAddress',
-            'addressLocality' => 'Istanbul',
-            'addressRegion'   => 'Istanbul',
-            'addressCountry'  => 'TR',
-        ],
-        'areaServed'   => [
-            '@type'  => 'City',
-            'name'   => 'Istanbul',
-            'sameAs' => 'https://en.wikipedia.org/wiki/Istanbul',
-        ],
-        'sameAs'       => $cfg['social_links'],
-        'contactPoint' => array_filter([
-            [
-                '@type'             => 'ContactPoint',
-                'telephone'         => $cfg['contact_phone'],
-                'contactType'       => 'customer service',
-                'availableLanguage' => $cfg['supported_languages'],
-                'areaServed'        => 'Worldwide',
-                'hoursAvailable'    => [
-                    '@type'     => 'OpeningHoursSpecification',
-                    'dayOfWeek' => ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
-                    'opens'     => '08:00',
-                    'closes'    => '22:00',
-                ],
-            ],
-            !empty($cfg['whatsapp_url']) ? [
-                '@type'       => 'ContactPoint',
-                'contactType' => 'customer service',
-                'url'         => $cfg['whatsapp_url'],
-                'name'        => 'WhatsApp Support',
-            ] : null,
-        ]),
-        'slogan' => 'See More Pay Less',
-    ];
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "{{ config.base_url }}/#organization",
+    "name": "{{ config.site_name }}",
+    "alternateName": ["ITP", "Istanbul Tourist Pass®"],
+    "url": "{{ config.base_url }}",
+    "logo": {
+        "@type": "ImageObject",
+        "url": "{{ config.logo_url }}",
+        "width": 300,
+        "height": 60
+    },
+    "image": "{{ config.og_image_url }}",
+    "description": "{{ config.site_description | safeJson }}",
+    "foundingDate": "{{ config.founding_date }}",
+    "email": "{{ config.contact_email }}",
+    "telephone": "{{ config.contact_phone }}",
+    "sameAs": {{ config.social_links | toJsonArray }},
+    "contactPoint": [
+        ... {{ config'den dinamik }}
+    ]
 }
 ```
 
@@ -445,37 +270,6 @@ public static function organization(): ?array
 
 ### 2.2 WebSite + SearchAction — Sadece Anasayfada
 
-**PHP Builder:**
-
-```php
-public static function website(): ?array
-{
-    if (!request()->is('/')) {
-        return null;
-    }
-
-    $base = config('schema.base_url');
-
-    return [
-        '@context' => 'https://schema.org',
-        '@type'    => 'WebSite',
-        '@id'      => $base . '/#website',
-        'name'     => config('schema.site_name'),
-        'url'      => $base,
-        'publisher'=> ['@id' => $base . '/#organization'],
-        'inLanguage' => app()->getLocale(),
-        'potentialAction' => [
-            '@type'  => 'SearchAction',
-            'target' => [
-                '@type'       => 'EntryPoint',
-                'urlTemplate' => $base . '/search?q={search_term_string}',
-            ],
-            'query-input' => 'required name=search_term_string',
-        ],
-    ];
-}
-```
-
 **Gerçek Çıktı:**
 
 ```json
@@ -500,63 +294,35 @@ public static function website(): ?array
 }
 ```
 
+> **Not:** Sitede arama özelliği yoksa `potentialAction` bloğunu çıkarın.
+
 ---
 
 ### 2.3 BreadcrumbList — Her Sayfada
 
 ```
-⚠️ KURAL: crumbs dizisi controller'dan gelmeli. Statik yazmayın.
-⚠️ FALLBACK: crumbs boş veya 1 elemanlıysa (anasayfa) → schema basma.
+⚠️ KURAL: Breadcrumb dizisi sayfa controller/route'undan dinamik gelmeli. Statik yazmayın.
+⚠️ FALLBACK: Dizi boş veya 1 elemanlıysa (anasayfa) → schema basma.
 ⚠️ KURAL: Son elemanın item (URL) alanı olmaz — sadece name.
+🔄 DÖNGÜ: Breadcrumb dizisi üzerinde iterasyon ile üretilir.
 ```
 
-**PHP Builder:**
+**Template:**
 
-```php
-/**
- * @param array $crumbs [['label' => 'Home', 'url' => '...'], ['label' => 'Attractions', 'url' => '...'], ...]
- */
-public static function breadcrumb(array $crumbs): ?array
+```json
 {
-    // 0 veya 1 elemanlıysa breadcrumb gereksiz
-    if (count($crumbs) < 2) {
-        return null;
-    }
-
-    $items = [];
-    foreach ($crumbs as $i => $crumb) {
-        $item = [
-            '@type'    => 'ListItem',
-            'position' => $i + 1,
-            'name'     => SchemaHelpers::safeJson($crumb['label']),
-        ];
-
-        // Son eleman hariç hepsinin URL'i olur
-        $isLast = ($i === count($crumbs) - 1);
-        if (!$isLast && !empty($crumb['url'])) {
-            $item['item'] = $crumb['url'];
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        // Her {{ crumb }} için:
+        {
+            "@type": "ListItem",
+            "position": {{ loop.index }},
+            "name": "{{ crumb.label | safeJson }}",
+            "item": "{{ crumb.url }}"   // ← son elemanda bu alan OLMAZ
         }
-
-        $items[] = $item;
-    }
-
-    return [
-        '@context'        => 'https://schema.org',
-        '@type'           => 'BreadcrumbList',
-        'itemListElement' => $items,
-    ];
+    ]
 }
-```
-
-**Controller'da kullanım:**
-
-```php
-// AttractionController@show
-$breadcrumbs = [
-    ['label' => 'Home',        'url' => config('schema.base_url')],
-    ['label' => 'Attractions', 'url' => config('schema.base_url') . '/whats-included'],
-    ['label' => $attraction->name, 'url' => null], // son eleman
-];
 ```
 
 **Gerçek Çıktı (Hagia Sophia sayfası):**
@@ -587,46 +353,55 @@ $breadcrumbs = [
 }
 ```
 
+**Breadcrumb hiyerarşi tablosu:**
+
+| Sayfa | Yapı |
+|---|---|
+| `/whats-included` | Home → Attractions |
+| `/hagia-sophia-guided-tour-...` | Home → Attractions → Hagia Sophia Guided Tour |
+| `/blog` | Home → Blog |
+| `/blog/tips-guides` | Home → Blog → Tips & Guides |
+| `/blog/tips-guides/istanbul-travel-mistakes` | Home → Blog → Tips & Guides → Istanbul Travel Mistakes |
+| `/istanbul-pass` | Home → Passes & Prices |
+| `/frequently-asked-questions` | Home → FAQ |
+| `/about-us` | Home → About Us |
+| `/contact` | Home → Contact |
+| `/reviews` | Home → Reviews |
+| `/how-it-works` | Home → How It Works |
+
 ---
 
-### 2.4 hreflang — Her Sayfada (Blade Partial)
+### 2.4 hreflang — Her Sayfada
 
-```html
-{{-- resources/views/components/schemas/hreflang.blade.php --}}
-{{-- 
-  ⚠️ DİKKAT: English prefix boş string olduğundan, naif birleştirme
-  "https://...com//slug" gibi çift slash üretir. rtrim + ltrim ile korunur.
---}}
-@php
-    $map  = config('schema.hreflang_map');
-    $base = rtrim(config('schema.base_url'), '/');
-    $path = $slug ? '/' . ltrim($slug, '/') : '';
-@endphp
-@foreach($map as $code => $lang)
-<link rel="alternate" hreflang="{{ $lang['hreflang'] }}" href="{{ $base }}{{ $lang['prefix'] }}{{ $path }}" />
-@endforeach
-<link rel="alternate" hreflang="x-default" href="{{ $base }}{{ $path }}" />
+```
+⚠️ DİKKAT: English prefix boş olduğundan çift slash riski var — URL birleştirmede trim kullanın.
+🔄 DÖNGÜ: Bölüm 1.6'daki dil tablosu üzerinde iterasyon.
 ```
 
-**Doğru çıktı (anasayfa, `$slug = ''`):**
+**Gerçek Çıktı (anasayfa):**
+
 ```html
 <link rel="alternate" hreflang="en" href="https://www.istanbultouristpass.com" />
 <link rel="alternate" hreflang="es" href="https://www.istanbultouristpass.com/es" />
 <link rel="alternate" hreflang="tr" href="https://www.istanbultouristpass.com/tr" />
+<!-- ... 25 dil için devam eder -->
+<link rel="alternate" hreflang="x-default" href="https://www.istanbultouristpass.com" />
 ```
 
-**Doğru çıktı (attraction detay, `$slug = 'hagia-sophia-guided-tour-...'`):**
+**Gerçek Çıktı (attraction detay):**
+
 ```html
 <link rel="alternate" hreflang="en" href="https://www.istanbultouristpass.com/hagia-sophia-guided-tour-..." />
 <link rel="alternate" hreflang="tr" href="https://www.istanbultouristpass.com/tr/hagia-sophia-guided-tour-..." />
+<!-- ... 25 dil için devam eder -->
+<link rel="alternate" hreflang="x-default" href="https://www.istanbultouristpass.com/hagia-sophia-guided-tour-..." />
 ```
 
 ---
 
 ## 3. Anasayfa
 
-**URL:** `/`  
-**Controller:** `HomeController@index`
+**URL:** `/`
 
 ### 3.1 Product + AggregateOffer
 
@@ -635,67 +410,40 @@ $breadcrumbs = [
 🔄 GÜNCELLEME: Fiyat veya review değiştiğinde otomatik
 ⚠️ FALLBACK: reviewCount < 1 → aggregateRating bloğunu çıkar
 ⚠️ FALLBACK: Hiç aktif pass yoksa → bu schema'yı basma
+⚠️ FALLBACK: Fiyat verisi yoksa → schema basma
 ```
 
-**PHP Builder:**
+**Template:**
 
-```php
-public static function mainProduct(): ?array
+```json
 {
-    $passes = Pass::where('is_active', true)->get();
-
-    if ($passes->isEmpty()) {
-        return null;
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": "{{ config.base_url }}/#product",
+    "name": "{{ config.product_name }}",
+    "description": "{{ config.product_description | safeJson }}",
+    "brand": { "@id": "{{ config.base_url }}/#organization" },
+    "image": "{{ config.og_image_url }}",
+    "category": "Sightseeing Pass",
+    "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "{{ passes | minPrice }}",
+        "highPrice": "{{ passes | maxPrice }}",
+        "priceCurrency": "{{ config.currency }}",
+        "offerCount": "{{ passes | activeCount }}",
+        "availability": "https://schema.org/InStock",
+        "url": "{{ config.base_url }}/istanbul-pass",
+        "seller": { "@id": "{{ config.base_url }}/#organization" },
+        "priceValidUntil": "{{ currentYear }}-12-31"
+    },
+    // ⚠️ SADECE reviewCount > 0 ise ekle:
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ reviews.averageRating | round(1) }}",
+        "reviewCount": "{{ reviews.totalCount }}",
+        "bestRating": "5",
+        "worstRating": "1"
     }
-
-    $cfg  = config('schema');
-    $low  = $passes->min('starting_price');
-    $high = $passes->max('max_price');
-
-    // Fiyat verisi yoksa schema basma
-    if (!$low || $low <= 0) {
-        return null;
-    }
-
-    $reviewCount = Review::where('is_approved', true)->count();
-    $avgRating   = Review::where('is_approved', true)->avg('rating');
-
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@type'    => 'Product',
-        '@id'      => $cfg['base_url'] . '/#product',
-        'name'     => $cfg['product_name'],
-        'description' => SchemaHelpers::safeJson(
-            "Istanbul's original digital sightseeing pass — access 120+ attractions, skip the lines, save over 65%."
-        ),
-        'brand' => ['@id' => $cfg['base_url'] . '/#organization'],
-        'image' => $cfg['og_image_url'],
-        'category' => 'Sightseeing Pass',
-        'offers' => [
-            '@type'         => 'AggregateOffer',
-            'lowPrice'      => (string) $low,
-            'highPrice'     => (string) $high,
-            'priceCurrency' => $cfg['currency'],
-            'offerCount'    => (string) $passes->count(),
-            'availability'  => 'https://schema.org/InStock',
-            'url'           => $cfg['base_url'] . '/istanbul-pass',
-            'seller'        => ['@id' => $cfg['base_url'] . '/#organization'],
-            'priceValidUntil' => date('Y') . '-12-31',
-        ],
-    ];
-
-    // Sadece review varsa ekle
-    if ($reviewCount > 0 && $avgRating > 0) {
-        $schema['aggregateRating'] = [
-            '@type'       => 'AggregateRating',
-            'ratingValue' => (string) round($avgRating, 1),
-            'reviewCount' => (string) $reviewCount,
-            'bestRating'  => '5',
-            'worstRating' => '1',
-        ];
-    }
-
-    return $schema;
 }
 ```
 
@@ -741,51 +489,9 @@ public static function mainProduct(): ?array
 ### 3.2 Review Örnekleri
 
 ```
-📊 VERİ KAYNAĞI: reviews tablosu (is_featured = true, is_approved = true)
-🔄 DÖNGÜ: foreach ile max 5 review
+📊 VERİ KAYNAĞI: reviews tablosu (is_featured = true, is_approved = true, rating >= 4)
+🔄 DÖNGÜ: Döngü ile max 5 review. Statik yazmayın — DB'den çekin.
 ⚠️ FALLBACK: 0 featured review → bu schema'yı tamamen çıkar
-⚠️ LİMİT: max 5 review bas
-```
-
-**PHP Builder:**
-
-```php
-public static function featuredReviews(): ?array
-{
-    $reviews = Review::where('is_featured', true)
-        ->where('is_approved', true)
-        ->where('rating', '>=', 4)
-        ->orderByDesc('created_at')
-        ->limit(5)
-        ->get();
-
-    if ($reviews->isEmpty()) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    return [
-        '@context' => 'https://schema.org',
-        '@type'    => 'Product',
-        '@id'      => $cfg['base_url'] . '/#product',
-        'name'     => $cfg['product_name'],
-        'review'   => $reviews->map(fn($r) => [
-            '@type'  => 'Review',
-            'author' => [
-                '@type' => 'Person',
-                'name'  => SchemaHelpers::safeJson($r->author_name),
-            ],
-            'datePublished' => $r->created_at->format('Y-m-d'),
-            'reviewRating'  => [
-                '@type'      => 'Rating',
-                'ratingValue'=> (string) $r->rating,
-                'bestRating' => '5',
-            ],
-            'reviewBody' => SchemaHelpers::safeJson($r->body, 500),
-        ])->toArray(),
-    ];
-}
 ```
 
 **Gerçek Çıktı:**
@@ -799,30 +505,16 @@ public static function featuredReviews(): ?array
     "review": [
         {
             "@type": "Review",
-            "author": {
-                "@type": "Person",
-                "name": "Justin Savoy"
-            },
+            "author": { "@type": "Person", "name": "Justin Savoy" },
             "datePublished": "2025-03-15",
-            "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": "5",
-                "bestRating": "5"
-            },
+            "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
             "reviewBody": "Istanbul Tourist Pass is absolutely incredible! We purchased the five day pass and absolutely got our moneys worth."
         },
         {
             "@type": "Review",
-            "author": {
-                "@type": "Person",
-                "name": "Ondra Dvoulety"
-            },
+            "author": { "@type": "Person", "name": "Ondra Dvoulety" },
             "datePublished": "2025-05-10",
-            "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": "5",
-                "bestRating": "5"
-            },
+            "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
             "reviewBody": "We took the Istanbul pass for three days and everything worked perfectly. Customer service always available via WhatsApp."
         }
     ]
@@ -831,40 +523,11 @@ public static function featuredReviews(): ?array
 
 ---
 
-### 3.3 HowTo
+### 3.3 HowTo (Nasıl Çalışır)
 
 ```
-📊 VERİ KAYNAĞI: CMS veya semi-static (nadiren değişir)
-💡 İPUCU: Adımlar nadiren değiştiği için CMS'den veya config'den gelebilir.
-```
-
-**PHP Builder:**
-
-```php
-public static function howTo(): array
-{
-    // Adımlar CMS'den geliyorsa: HowToStep::orderBy('position')->get()
-    // Yoksa config/hardcoded:
-    $steps = [
-        ['title' => 'Get Your Pass',     'text' => 'Complete your purchase, and receive your Pass ID with usage details.'],
-        ['title' => 'Download & Plan',   'text' => 'Download & activate your pass, book attractions, organize your days and track your credit points — all in one app.'],
-        ['title' => 'Explore & Enjoy',   'text' => 'Just Show&Go — all digital, eco-friendly access to 120+ attractions with your e-ticket QR codes.'],
-    ];
-
-    return [
-        '@context'    => 'https://schema.org',
-        '@type'       => 'HowTo',
-        'name'        => 'How to Use Istanbul Tourist Pass',
-        'description' => 'Simple, Fast, and Hassle-Free — 3 steps to explore Istanbul.',
-        'totalTime'   => 'PT5M',
-        'step'        => collect($steps)->map(fn($s, $i) => [
-            '@type'    => 'HowToStep',
-            'position' => $i + 1,
-            'name'     => $s['title'],
-            'text'     => $s['text'],
-        ])->toArray(),
-    ];
-}
+📊 VERİ KAYNAĞI: CMS veya config (nadiren değişir — semi-static OK)
+🔄 DÖNGÜ: Adım dizisi üzerinde iterasyon
 ```
 
 **Gerçek Çıktı:**
@@ -901,47 +564,121 @@ public static function howTo(): array
 
 ---
 
-## 4. Attraction Listing
-
-**URL:** `/whats-included`  
-**Controller:** `AttractionController@index`
-
-### 4.1 ItemList
+### 3.4 SoftwareApplication (Mobil Uygulama)
 
 ```
-📊 VERİ KAYNAĞI: attractions tablosu (is_active = true, sıralı)
-🔄 DÖNGÜ: foreach ile TÜM aktif attraction'lar
-⚠️ KURAL: Pagination varsa sadece sayfa 1'e ItemList bas. Sayfa 2+ için basma.
+📊 VERİ KAYNAĞI: config (app store URL'leri)
+⚠️ FALLBACK: App store URL'leri yoksa bu schema'yı basma
 ```
 
-**PHP Builder:**
+**Gerçek Çıktı:**
 
-```php
-public static function attractionList(Collection $attractions): ?array
+```json
 {
-    if ($attractions->isEmpty()) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    return [
-        '@context'        => 'https://schema.org',
-        '@type'           => 'ItemList',
-        'name'            => 'Istanbul Tourist Pass Attractions',
-        'numberOfItems'   => $attractions->count(),
-        'itemListElement' => $attractions->values()->map(fn($a, $i) => array_filter([
-            '@type'    => 'ListItem',
-            'position' => $i + 1,
-            'url'      => $cfg['base_url'] . '/' . $a->slug,
-            'name'     => SchemaHelpers::safeJson($a->name),
-            'image'    => $a->featured_image_url ?: null, // null ise array_filter temizler
-        ]))->toArray(),
-    ];
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Istanbul Tourist Pass",
+    "operatingSystem": "iOS 15.0+, Android 8.0+",
+    "applicationCategory": "TravelApplication",
+    "description": "Download the Istanbul Tourist Pass app to access your digital pass, manage reservations, and explore Istanbul with audio guides in 25 languages.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "author": { "@id": "https://www.istanbultouristpass.com/#organization" },
+    "installUrl": "https://apps.apple.com/tr/app/istanbul-tourist-pass/id6535683117",
+    "downloadUrl": "https://play.google.com/store/apps/details?id=com.istanbultouristpass.app"
 }
 ```
 
-**Gerçek Çıktı (ilk 3 attraction gösterilmiştir, tüm 120+ basılmalı):**
+---
+
+### 3.5 SiteNavigationElement
+
+```
+📊 VERİ KAYNAĞI: Navigasyon/menü tablosu veya config
+🔄 DÖNGÜ: Ana menü item'ları üzerinden
+💡 ÖNCELİK: 🟢 BONUS — Sprint 3
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "SiteNavigationElement",
+    "name": "Main Navigation",
+    "hasPart": [
+        { "@type": "WebPage", "name": "Attractions", "url": "https://www.istanbultouristpass.com/whats-included" },
+        { "@type": "WebPage", "name": "Passes & Prices", "url": "https://www.istanbultouristpass.com/istanbul-pass" },
+        { "@type": "WebPage", "name": "Compare Passes", "url": "https://www.istanbultouristpass.com/compare-passes" },
+        { "@type": "WebPage", "name": "Blog", "url": "https://www.istanbultouristpass.com/blog" },
+        { "@type": "WebPage", "name": "FAQs", "url": "https://www.istanbultouristpass.com/frequently-asked-questions" },
+        { "@type": "WebPage", "name": "Contact Us", "url": "https://www.istanbultouristpass.com/contact" }
+    ]
+}
+```
+
+---
+
+### 3.6 VideoObject (Testimonial Videoları)
+
+```
+📊 VERİ KAYNAĞI: video_testimonials tablosu
+🔄 DÖNGÜ: Her video için ayrı bir schema
+⚠️ FALLBACK: Video yoksa basma. duration yoksa alanı çıkar.
+```
+
+**Gerçek Çıktı (tek bir video):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": "Alina from Ukraine — Istanbul Tourist Pass Review",
+    "description": "Real traveler Alina shares her Istanbul Tourist Pass experience.",
+    "thumbnailUrl": "https://img.youtube.com/vi/7JQ-kfExIf8/hqdefault.jpg",
+    "uploadDate": "2025-06-01",
+    "contentUrl": "https://www.youtube.com/watch?v=7JQ-kfExIf8",
+    "publisher": { "@id": "https://www.istanbultouristpass.com/#organization" },
+    "embedUrl": "https://www.youtube.com/embed/7JQ-kfExIf8",
+    "duration": "PT2M15S"
+}
+```
+
+---
+
+## 4. Attraction Listing
+
+**URL:** `/whats-included`
+
+### 4.1 ItemList (Attraction Carousel)
+
+```
+📊 VERİ KAYNAĞI: attractions tablosu (is_active = true, sıralı)
+🔄 DÖNGÜ: Döngü ile TÜM aktif attraction'lar
+⚠️ KURAL: Pagination varsa sadece sayfa 1'e ItemList bas. Sayfa 2+ için basma.
+```
+
+**Template:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Istanbul Tourist Pass Attractions",
+    "numberOfItems": {{ attractions.count }},
+    "itemListElement": [
+        // Her {{ attraction }} için:
+        {
+            "@type": "ListItem",
+            "position": {{ loop.index }},
+            "url": "{{ config.base_url }}/{{ attraction.slug }}",
+            "name": "{{ attraction.name | safeJson }}",
+            "image": "{{ attraction.featured_image_url }}"  // ← yoksa alanı çıkar
+        }
+    ]
+}
+```
+
+**Gerçek Çıktı (ilk 3 gösterilmiştir — tüm 120+ basılmalı):**
 
 ```json
 {
@@ -977,79 +714,63 @@ public static function attractionList(Collection $attractions): ?array
 
 ---
 
+### 4.2 OfferCatalog (Kategori Bazlı)
+
+```
+📊 VERİ KAYNAĞI: attraction_categories tablosu + her birinin aktif attraction sayısı
+🔄 DÖNGÜ: Kategoriler üzerinde iterasyon
+⚠️ FALLBACK: Kategoride 0 attraction varsa o kategoriyi atla
+💡 ÖNCELİK: 🟢 BONUS
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    "name": "Istanbul Tourist Pass Attraction Categories",
+    "itemListElement": [
+        { "@type": "OfferCatalog", "name": "Museums", "numberOfItems": 35 },
+        { "@type": "OfferCatalog", "name": "Mosques & Places of Worship", "numberOfItems": 9 },
+        { "@type": "OfferCatalog", "name": "Historical Landmarks", "numberOfItems": 30 },
+        { "@type": "OfferCatalog", "name": "Sightseeing & Bosphorus Cruise", "numberOfItems": 12 },
+        { "@type": "OfferCatalog", "name": "Shows & Entertainment", "numberOfItems": 7 },
+        { "@type": "OfferCatalog", "name": "Family Friendly", "numberOfItems": 20 }
+    ]
+}
+```
+
+---
+
 ## 5. Attraction Detay
 
 **URL:** `/:attraction_slug`  
-**Controller:** `AttractionController@show`  
 **En fazla schema içeren sayfa tipi: 7 adet**
 
 ### 5.1 TouristAttraction
 
 ```
-📊 VERİ KAYNAĞI: attractions + attraction_locations + attraction_tags
-⚠️ FALLBACK: geo yoksa → geo bloğunu çıkar. address yoksa → address'i çıkar.
+📊 VERİ KAYNAĞI: attractions tablosu + locations + tags
+⚠️ FALLBACK: geo yoksa → geo bloğunu çıkar. address yoksa → address bloğunu çıkar.
 ```
 
-**PHP Builder:**
+**Template:**
 
-```php
-public static function touristAttraction(Attraction $a): array
+```json
 {
-    $cfg    = config('schema');
-    $images = $a->images->pluck('url')->toArray();
-
-    $schema = [
-        '@context'        => 'https://schema.org',
-        '@type'           => 'TouristAttraction',
-        '@id'             => $cfg['base_url'] . '/' . $a->slug . '/#attraction',
-        'name'            => SchemaHelpers::safeJson($a->name),
-        'description'     => SchemaHelpers::safeJson($a->long_description ?: $a->short_description),
-        'image'           => !empty($images) ? $images : [$a->featured_image_url ?? $cfg['og_image_url']],
-        'url'             => $cfg['base_url'] . '/' . $a->slug,
-        'isAccessibleForFree' => $a->is_free ?? false,
-        'publicAccess'    => true,
-        'containedInPlace'=> [
-            '@type'  => 'City',
-            'name'   => 'Istanbul',
-            'sameAs' => 'https://en.wikipedia.org/wiki/Istanbul',
-        ],
-    ];
-
-    // Opsiyonel: Tourist types
-    if ($a->tourist_types && count($a->tourist_types) > 0) {
-        $schema['touristType'] = $a->tourist_types;
-    }
-
-    // Opsiyonel: Diller
-    if ($a->available_languages && count($a->available_languages) > 0) {
-        $schema['availableLanguage'] = $a->available_languages;
-    }
-
-    // Opsiyonel: Koordinatlar
-    if ($a->latitude && $a->longitude) {
-        $schema['geo'] = [
-            '@type'     => 'GeoCoordinates',
-            'latitude'  => (float) $a->latitude,
-            'longitude' => (float) $a->longitude,
-        ];
-    }
-
-    // Opsiyonel: Adres
-    if ($a->street_address) {
-        $address = [
-            '@type'           => 'PostalAddress',
-            'streetAddress'   => SchemaHelpers::safeJson($a->street_address),
-            'addressLocality' => $a->district ?? 'Istanbul',
-            'addressRegion'   => 'Istanbul',
-            'addressCountry'  => 'TR',
-        ];
-        if ($a->postal_code) {
-            $address['postalCode'] = $a->postal_code;
-        }
-        $schema['address'] = $address;
-    }
-
-    return $schema;
+    "@context": "https://schema.org",
+    "@type": "TouristAttraction",
+    "@id": "{{ config.base_url }}/{{ attraction.slug }}/#attraction",
+    "name": "{{ attraction.name | safeJson }}",
+    "description": "{{ attraction.long_description | safeJson }}",
+    "image": {{ attraction.images | toJsonArray }},
+    "url": "{{ config.base_url }}/{{ attraction.slug }}",
+    "touristType": {{ attraction.tourist_types | toJsonArray }},  // ← yoksa çıkar
+    "availableLanguage": {{ attraction.languages | toJsonArray }}, // ← yoksa çıkar
+    "geo": { ... },          // ← lat/lng yoksa TÜMÜNÜ çıkar
+    "address": { ... },      // ← street_address yoksa TÜMÜNÜ çıkar
+    "containedInPlace": { "@type": "City", "name": "Istanbul", "sameAs": "https://en.wikipedia.org/wiki/Istanbul" }
 }
 ```
 
@@ -1062,17 +783,10 @@ public static function touristAttraction(Attraction $a): array
     "@id": "https://www.istanbultouristpass.com/hagia-sophia-guided-tour-with-skip-the-ticket-line-entry/#attraction",
     "name": "Hagia Sophia Guided Tour with Skip-the-Ticket-Line Entry",
     "description": "Explore the iconic Hagia Sophia mosque — a UNESCO World Heritage Site — with an expert English-speaking guide. Skip the long ticket lines and discover 1,500 years of Byzantine and Ottoman history.",
-    "image": [
-        "https://www.istanbultouristpass.com/_astro/large_daf27debdbd2_Z1AeMYM.webp"
-    ],
+    "image": ["https://www.istanbultouristpass.com/_astro/large_daf27debdbd2_Z1AeMYM.webp"],
     "url": "https://www.istanbultouristpass.com/hagia-sophia-guided-tour-with-skip-the-ticket-line-entry",
     "isAccessibleForFree": false,
     "publicAccess": true,
-    "containedInPlace": {
-        "@type": "City",
-        "name": "Istanbul",
-        "sameAs": "https://en.wikipedia.org/wiki/Istanbul"
-    },
     "touristType": ["Cultural Tourism", "Historical Tourism", "Religious Tourism"],
     "availableLanguage": ["English", "Turkish", "German", "Spanish"],
     "geo": {
@@ -1087,6 +801,11 @@ public static function touristAttraction(Attraction $a): array
         "addressRegion": "Istanbul",
         "addressCountry": "TR",
         "postalCode": "34122"
+    },
+    "containedInPlace": {
+        "@type": "City",
+        "name": "Istanbul",
+        "sameAs": "https://en.wikipedia.org/wiki/Istanbul"
     }
 }
 ```
@@ -1097,68 +816,40 @@ public static function touristAttraction(Attraction $a): array
 
 ```
 📊 VERİ KAYNAĞI: attractions tablosu (current_price, is_active)
-⚠️ KRİTİK: price, sayfada render edilen fiyatla BİREBİR eşleşmeli.
-   Farklı olursa Google "price mismatch" hatası verir.
+⚠️ KRİTİK: price, sayfada render edilen fiyatla BİREBİR eşleşmeli. Farklı kaynak kullanımı Google'da "price mismatch" hatasına yol açar.
 ⚠️ FALLBACK: price null/0 → BU SCHEMA'YI HİÇ BASMA
+⚠️ FALLBACK: reviewCount = 0 → aggregateRating bloğunu çıkar
 ```
 
-**PHP Builder:**
+**Template:**
 
-```php
-public static function productOffer(Attraction $a): ?array
+```json
+// ⚠️ KOŞUL: SADECE attraction.current_price > 0 ise bas
 {
-    // Fiyat yoksa veya 0 ise schema basma
-    $price = $a->current_price;
-    if (!$price || $price <= 0) {
-        return null;
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ attraction.name | safeJson }}",
+    "description": "{{ attraction.short_description | safeJson }}",
+    "image": "{{ attraction.featured_image_url ?? config.og_image_url }}",
+    "sku": "ITP-{{ attraction.sku ?? attraction.id }}",
+    "brand": { "@id": "{{ config.base_url }}/#organization" },
+    "category": "{{ attraction.category.name | safeJson }}",
+    "offers": {
+        "@type": "Offer",
+        "price": "{{ attraction.current_price }}",
+        "priceCurrency": "{{ config.currency }}",
+        "availability": "{{ attraction.is_active ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+        "priceValidUntil": "{{ currentYear }}-12-31",
+        "url": "{{ config.base_url }}/{{ attraction.slug }}",
+        "seller": { "@id": "{{ config.base_url }}/#organization" }
+    },
+    // ⚠️ SADECE reviewCount > 0 ise ekle:
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ attraction.average_rating | round(1) }}",
+        "reviewCount": "{{ attraction.review_count }}",
+        "bestRating": "5"
     }
-
-    $cfg = config('schema');
-
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@type'    => 'Product',
-        'name'     => SchemaHelpers::safeJson($a->name),
-        'description' => SchemaHelpers::safeJson($a->short_description),
-        'image'    => $a->featured_image_url ?? $cfg['og_image_url'],
-        'sku'      => 'ITP-' . ($a->sku ?? $a->id),
-        'brand'    => ['@id' => $cfg['base_url'] . '/#organization'],
-        'category' => SchemaHelpers::safeJson($a->category->name ?? 'Attraction'),
-        'offers'   => [
-            '@type'             => 'Offer',
-            'price'             => (string) $price,
-            'priceCurrency'     => $cfg['currency'],
-            'availability'      => $a->is_active
-                                    ? 'https://schema.org/InStock'
-                                    : 'https://schema.org/OutOfStock',
-            'validFrom'         => ($a->valid_from ?? now()->startOfYear())->format('Y-m-d'),
-            'priceValidUntil'   => date('Y') . '-12-31',
-            'url'               => $cfg['base_url'] . '/' . $a->slug,
-            'seller'            => ['@id' => $cfg['base_url'] . '/#organization'],
-            'itemCondition'     => 'https://schema.org/NewCondition',
-            'hasMerchantReturnPolicy' => [
-                '@type'                => 'MerchantReturnPolicy',
-                'applicableCountry'    => 'TR',
-                'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
-                'merchantReturnDays'   => $cfg['return_days'],
-                'returnFees'           => 'https://schema.org/FreeReturn',
-            ],
-        ],
-    ];
-
-    // Review varsa ekle
-    $reviewCount = $a->approved_reviews_count ?? $a->approvedReviews()->count();
-    if ($reviewCount > 0) {
-        $avgRating = $a->approved_reviews_avg_rating ?? $a->approvedReviews()->avg('rating');
-        $schema['aggregateRating'] = [
-            '@type'       => 'AggregateRating',
-            'ratingValue' => (string) round($avgRating, 1),
-            'reviewCount' => (string) $reviewCount,
-            'bestRating'  => '5',
-        ];
-    }
-
-    return $schema;
 }
 ```
 
@@ -1172,9 +863,7 @@ public static function productOffer(Attraction $a): ?array
     "description": "Skip the long lines and explore Hagia Sophia with a licensed guide. Includes entry ticket and 60-90 minute guided tour.",
     "image": "https://www.istanbultouristpass.com/_astro/large_daf27debdbd2_Z1AeMYM.webp",
     "sku": "ITP-HSG-001",
-    "brand": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
+    "brand": { "@id": "https://www.istanbultouristpass.com/#organization" },
     "category": "Museums",
     "offers": {
         "@type": "Offer",
@@ -1184,9 +873,7 @@ public static function productOffer(Attraction $a): ?array
         "validFrom": "2025-01-01",
         "priceValidUntil": "2026-12-31",
         "url": "https://www.istanbultouristpass.com/hagia-sophia-guided-tour-with-skip-the-ticket-line-entry",
-        "seller": {
-            "@id": "https://www.istanbultouristpass.com/#organization"
-        },
+        "seller": { "@id": "https://www.istanbultouristpass.com/#organization" },
         "itemCondition": "https://schema.org/NewCondition",
         "hasMerchantReturnPolicy": {
             "@type": "MerchantReturnPolicy",
@@ -1210,79 +897,11 @@ public static function productOffer(Attraction $a): ?array
 ### 5.3 Event (Rehberli Turlar & Gösteriler)
 
 ```
-⚠️ KOŞUL: SADECE is_guided_tour=true veya is_event=true olanlarda bas.
+⚠️ KOŞUL: SADECE is_guided_tour veya is_event flag'i true olanlarda bas.
    Müze giriş bileti gibi attraction'lar için Event schema BASMA.
-```
-
-**PHP Builder:**
-
-```php
-public static function event(Attraction $a): ?array
-{
-    if (!$a->is_guided_tour && !$a->is_event) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    $schema = [
-        '@context'             => 'https://schema.org',
-        '@type'                => 'Event',
-        'name'                 => SchemaHelpers::safeJson($a->event_name ?? $a->name),
-        'description'          => SchemaHelpers::safeJson($a->short_description),
-        'image'                => $a->featured_image_url ?? $cfg['og_image_url'],
-        'eventAttendanceMode'  => 'https://schema.org/OfflineEventAttendanceMode',
-        'eventStatus'          => $a->is_active
-                                   ? 'https://schema.org/EventScheduled'
-                                   : 'https://schema.org/EventCancelled',
-        'location' => [
-            '@type'   => 'Place',
-            'name'    => SchemaHelpers::safeJson($a->venue_name ?? $a->name),
-            'address' => [
-                '@type'           => 'PostalAddress',
-                'addressLocality' => 'Istanbul',
-                'addressCountry'  => 'TR',
-            ],
-        ],
-        'organizer' => ['@id' => $cfg['base_url'] . '/#organization'],
-        'offers'    => [
-            '@type'        => 'Offer',
-            'price'        => (string) $a->current_price,
-            'priceCurrency'=> $cfg['currency'],
-            'availability' => 'https://schema.org/InStock',
-            'url'          => $cfg['base_url'] . '/' . $a->slug,
-        ],
-        'inLanguage' => $a->primary_language ?? 'en',
-    ];
-
-    // Opsiyonel: Schedule
-    if ($a->schedule_days && $a->schedule_start_time) {
-        $schema['eventSchedule'] = [
-            '@type'            => 'Schedule',
-            'repeatFrequency'  => 'P1D',
-            'byDay'            => $a->schedule_days, // ['Monday','Tuesday',...]
-            'startTime'        => $a->schedule_start_time,
-            'endTime'          => $a->schedule_end_time ?? '17:00:00',
-            'scheduleTimezone' => 'Europe/Istanbul',
-        ];
-    }
-
-    // Opsiyonel: Koordinatlar
-    if ($a->latitude && $a->longitude) {
-        $schema['location']['geo'] = [
-            '@type'     => 'GeoCoordinates',
-            'latitude'  => (float) $a->latitude,
-            'longitude' => (float) $a->longitude,
-        ];
-    }
-
-    // Opsiyonel: Süre
-    if ($a->duration_minutes) {
-        $schema['duration'] = 'PT' . $a->duration_minutes . 'M';
-    }
-
-    return $schema;
-}
+⚠️ FALLBACK: schedule yoksa → eventSchedule bloğunu çıkar
+⚠️ FALLBACK: koordinat yoksa → geo bloğunu çıkar
+⚠️ FALLBACK: duration yoksa → duration alanını çıkar
 ```
 
 **Gerçek Çıktı (Hagia Sophia Guided Tour):**
@@ -1318,9 +937,7 @@ public static function event(Attraction $a): ?array
             "longitude": 28.9802
         }
     },
-    "organizer": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
+    "organizer": { "@id": "https://www.istanbultouristpass.com/#organization" },
     "offers": {
         "@type": "Offer",
         "price": "35",
@@ -1338,37 +955,10 @@ public static function event(Attraction $a): ?array
 ### 5.4 FAQPage (Per Attraction)
 
 ```
-📊 VERİ KAYNAĞI: attraction_faqs tablosu (attraction_id FK)
-🔄 DÖNGÜ: O attraction'a ait tüm aktif FAQ'lar
+📊 VERİ KAYNAĞI: attraction_faqs tablosu (attraction_id ile ilişkili)
+🔄 DÖNGÜ: O attraction'a ait tüm FAQ'lar üzerinde iterasyon
 ⚠️ FALLBACK: 0 FAQ → schema basma
-⚠️ DİKKAT: Cevaplarda HTML olabilir — strip_tags kullan
-```
-
-**PHP Builder:**
-
-```php
-public static function faqPage($faqs): ?array
-{
-    // Collection veya array olabilir
-    $faqs = collect($faqs)->filter(fn($f) => !empty($f->question) && !empty($f->answer));
-
-    if ($faqs->isEmpty()) {
-        return null;
-    }
-
-    return [
-        '@context'   => 'https://schema.org',
-        '@type'      => 'FAQPage',
-        'mainEntity' => $faqs->map(fn($f) => [
-            '@type' => 'Question',
-            'name'  => SchemaHelpers::safeJson($f->question),
-            'acceptedAnswer' => [
-                '@type' => 'Answer',
-                'text'  => SchemaHelpers::safeJson($f->answer),
-            ],
-        ])->toArray(),
-    ];
-}
+⚠️ DİKKAT: Cevaplardaki HTML tag'leri temizlenmeli (strip_tags)
 ```
 
 **Gerçek Çıktı (Hagia Sophia FAQ'ları):**
@@ -1408,68 +998,72 @@ public static function faqPage($faqs): ?array
 
 ---
 
-## 6–7. Blog Listing & Blog Detay
-
-### 6.1 Blog Listing (CollectionPage + ItemList)
+### 5.5 Review + AggregateRating (Per Attraction)
 
 ```
-📊 VERİ KAYNAĞI: articles tablosu (is_published = true, sıralı)
-🔄 DÖNGÜ: foreach ile tüm yayınlanmış yazılar
-⚠️ LİMİT: Pagination varsa sadece sayfa 1'e ItemList bas
-💡 İPUCU: CollectionPage builder'ı Bölüm 12.2'deki collectionPage() fonksiyonunu kullanır.
-   ItemList builder'ı Bölüm 4.1'deki attractionList() ile aynı pattern'dir.
+📊 VERİ KAYNAĞI: reviews tablosu (attraction_id ile filtrelenen, is_approved = true)
+🔄 DÖNGÜ: Max 5 approved review
+⚠️ FALLBACK: 0 review → tüm bloğu çıkar
 ```
 
-**Controller:**
+**Gerçek Çıktı:**
 
-```php
-// BlogController@index
-public function index()
+```json
 {
-    $articles = Article::where('is_published', true)
-        ->with('category')
-        ->orderByDesc('published_at')
-        ->get();
-
-    $schemas = array_filter([
-        SchemaService::breadcrumb([
-            ['label' => 'Home', 'url' => config('schema.base_url')],
-            ['label' => 'Blog', 'url' => null],
-        ]),
-        SchemaService::collectionPage(  // Bölüm 12.2'deki fonksiyon
-            'blog',
-            'Istanbul Travel Guide — Tips, Guides & Stories',
-            'Plan your trip like a local with our Istanbul travel guides and insider tips.'
-        ),
-        SchemaService::articleList($articles),
-    ]);
-
-    return view('blog.index', compact('articles', 'schemas'));
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Hagia Sophia Guided Tour with Skip-the-Ticket-Line Entry",
+    "review": [
+        {
+            "@type": "Review",
+            "author": { "@type": "Person", "name": "Nurin" },
+            "datePublished": "2025-11-10",
+            "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+            "reviewBody": "We had a tour at Hagia Sophia Mosque with Ilke Nur! She was very accommodating and friendly."
+        },
+        {
+            "@type": "Review",
+            "author": { "@type": "Person", "name": "Ruomei" },
+            "datePublished": "2025-10-05",
+            "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+            "reviewBody": "Our tour guide was very knowledgeable about the Hagia Sofia. We really enjoyed his explanation."
+        }
+    ],
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "350",
+        "bestRating": "5"
+    }
 }
 ```
 
-**PHP Builder (ArticleList):**
+---
 
-```php
-public static function articleList(Collection $articles): ?array
+## 6. Blog Listing
+
+**URL:** `/blog`
+
+### 6.1 CollectionPage + ItemList
+
+```
+📊 VERİ KAYNAĞI: articles tablosu (is_published = true, tarih sıralı)
+🔄 DÖNGÜ: Yayınlanmış blog yazıları üzerinde iterasyon
+⚠️ KURAL: Pagination varsa sadece sayfa 1'e ItemList bas
+```
+
+**Gerçek Çıktı (CollectionPage):**
+
+```json
 {
-    if ($articles->isEmpty()) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    return [
-        '@context'        => 'https://schema.org',
-        '@type'           => 'ItemList',
-        'name'            => 'Istanbul Travel Guide Articles',
-        'itemListElement' => $articles->values()->map(fn($a, $i) => [
-            '@type'    => 'ListItem',
-            'position' => $i + 1,
-            'url'      => $cfg['base_url'] . '/blog/' . $a->category->slug . '/' . $a->slug,
-            'name'     => SchemaHelpers::safeJson($a->title),
-        ])->toArray(),
-    ];
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": "https://www.istanbultouristpass.com/blog/#webpage",
+    "name": "Istanbul Travel Guide — Tips, Guides & Stories",
+    "description": "Plan your trip like a local with our Istanbul travel guides and insider tips.",
+    "url": "https://www.istanbultouristpass.com/blog",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
 }
 ```
 
@@ -1505,81 +1099,50 @@ public static function articleList(Collection $articles): ?array
 
 ---
 
+## 7. Blog Detay
+
+**URL:** `/blog/:category_slug/:article_slug`
+
 ### 7.1 BlogPosting
 
 ```
-📊 VERİ KAYNAĞI: articles + authors + categories
-⚠️ KRİTİK: dateModified'ı her render'da güncellemeyin — sadece gerçek edit'te.
-⚠️ FALLBACK: author yoksa → config('schema.default_author')
-⚠️ FALLBACK: image yoksa → og_image_url
-⚠️ FALLBACK: wordCount yoksa → alanı çıkar
+📊 VERİ KAYNAĞI: articles + authors + categories tabloları
+⚠️ KRİTİK: dateModified'ı her sayfa render'ında güncellemeyin — sadece gerçek içerik editinde.
+⚠️ FALLBACK: author yoksa → config'deki default_author kullan
+⚠️ FALLBACK: image yoksa → OG image kullan
+⚠️ FALLBACK: wordCount yoksa → wordCount ve timeRequired alanlarını çıkar
+⚠️ FALLBACK: tags yoksa → keywords alanını çıkar
 ```
 
-**PHP Builder:**
+**Template:**
 
-```php
-public static function blogPosting(Article $article): array
+```json
 {
-    $cfg    = config('schema');
-    $author = $article->author;
-
-    $schema = [
-        '@context'  => 'https://schema.org',
-        '@type'     => 'BlogPosting',
-        '@id'       => $cfg['base_url'] . '/blog/' . $article->category->slug . '/' . $article->slug . '/#article',
-        'headline'  => SchemaHelpers::safeJson($article->title, 110),
-        'description' => SchemaHelpers::safeJson($article->meta_description ?: $article->excerpt),
-        'datePublished' => $article->published_at->format('Y-m-d'),
-        'inLanguage'    => app()->getLocale(),
-        'url'           => $cfg['base_url'] . '/blog/' . $article->category->slug . '/' . $article->slug,
-        'image' => [
-            '@type'  => 'ImageObject',
-            'url'    => $article->featured_image_url ?? $cfg['og_image_url'],
-            'width'  => $article->featured_image_width ?? 1200,
-            'height' => $article->featured_image_height ?? 630,
-        ],
-        'author' => [
-            '@type'    => 'Person',
-            '@id'      => $cfg['base_url'] . '/authors/' . ($author->slug ?? 'editorial-team') . '/#person',
-            'name'     => SchemaHelpers::safeJson($author->name ?? $cfg['default_author']),
-            'url'      => $author->url ?? $cfg['base_url'] . '/about-us',
-            'worksFor' => ['@id' => $cfg['base_url'] . '/#organization'],
-        ],
-        'publisher'        => ['@id' => $cfg['base_url'] . '/#organization'],
-        'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $cfg['base_url'] . '/blog/' . $article->category->slug . '/' . $article->slug . '/#webpage'],
-        'articleSection'   => SchemaHelpers::safeJson($article->category->name),
-        'isPartOf'         => ['@id' => $cfg['base_url'] . '/#website'],
-        'about'            => ['@type' => 'City', 'name' => 'Istanbul', 'sameAs' => 'https://en.wikipedia.org/wiki/Istanbul'],
-    ];
-
-    // dateModified — sadece gerçekten güncellendiyse
-    if ($article->updated_at && $article->updated_at->gt($article->published_at)) {
-        $schema['dateModified'] = $article->updated_at->format('Y-m-d');
-    }
-
-    // wordCount & readTime — varsa ekle
-    if ($article->word_count && $article->word_count > 0) {
-        $schema['wordCount']    = $article->word_count;
-        $schema['timeRequired'] = 'PT' . SchemaHelpers::readingTime($article->word_count) . 'M';
-    }
-
-    // Keywords — varsa ekle
-    $tags = $article->tags->pluck('name')->toArray();
-    if (!empty($tags)) {
-        $schema['keywords'] = $tags;
-    }
-
-    // Author expertise — varsa ekle
-    if ($author && $author->expertise && count($author->expertise) > 0) {
-        $schema['author']['knowsAbout'] = $author->expertise;
-    }
-
-    // Author jobTitle — varsa ekle
-    if ($author && $author->job_title) {
-        $schema['author']['jobTitle'] = SchemaHelpers::safeJson($author->job_title);
-    }
-
-    return $schema;
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": "{{ config.base_url }}/blog/{{ article.category.slug }}/{{ article.slug }}/#article",
+    "headline": "{{ article.title | safeJson | truncate(110) }}",
+    "description": "{{ article.meta_description | safeJson }}",
+    "datePublished": "{{ article.published_at | dateFormat('Y-m-d') }}",
+    "dateModified": "...",   // ← sadece updated_at > published_at ise ekle, yoksa çıkar
+    "wordCount": ...,        // ← yoksa çıkar
+    "timeRequired": "PT{{ wordCount / 200 | round }}M",  // ← wordCount yoksa çıkar
+    "inLanguage": "{{ currentLocale }}",
+    "url": "{{ config.base_url }}/blog/{{ article.category.slug }}/{{ article.slug }}",
+    "image": { "@type": "ImageObject", "url": "{{ article.featured_image_url ?? config.og_image_url }}", "width": 1200, "height": 630 },
+    "author": {
+        "@type": "Person",
+        "@id": "{{ config.base_url }}/authors/{{ author.slug ?? 'editorial-team' }}/#person",
+        "name": "{{ author.name ?? config.default_author | safeJson }}",
+        "url": "{{ author.url ?? config.base_url + '/about-us' }}",
+        "jobTitle": "...",       // ← yoksa çıkar
+        "worksFor": { "@id": "{{ config.base_url }}/#organization" },
+        "knowsAbout": [...]      // ← yoksa çıkar
+    },
+    "publisher": { "@id": "{{ config.base_url }}/#organization" },
+    "articleSection": "{{ article.category.name | safeJson }}",
+    "keywords": {{ article.tags | pluck('name') | toJsonArray }},  // ← yoksa çıkar
+    "about": { "@type": "City", "name": "Istanbul", "sameAs": "https://en.wikipedia.org/wiki/Istanbul" }
 }
 ```
 
@@ -1610,23 +1173,17 @@ public static function blogPosting(Article $article): array
         "name": "ITP Editorial Team",
         "url": "https://www.istanbultouristpass.com/about-us",
         "jobTitle": "Senior Travel Content Creator",
-        "worksFor": {
-            "@id": "https://www.istanbultouristpass.com/#organization"
-        },
+        "worksFor": { "@id": "https://www.istanbultouristpass.com/#organization" },
         "knowsAbout": ["Istanbul Tourism", "Turkish Culture", "Travel Planning"]
     },
-    "publisher": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
+    "publisher": { "@id": "https://www.istanbultouristpass.com/#organization" },
     "mainEntityOfPage": {
         "@type": "WebPage",
         "@id": "https://www.istanbultouristpass.com/blog/tips-guides/istanbul-travel-mistakes-to-avoid/#webpage"
     },
     "articleSection": "Tips & Guides",
     "keywords": ["istanbul travel tips", "istanbul mistakes", "tourist guide istanbul"],
-    "isPartOf": {
-        "@id": "https://www.istanbultouristpass.com/#website"
-    },
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
     "about": {
         "@type": "City",
         "name": "Istanbul",
@@ -1637,20 +1194,26 @@ public static function blogPosting(Article $article): array
 
 ---
 
-## 8–9. Blog Kategori & FAQ
+## 8. Blog Kategori
 
-Blog Kategori, Blog Listing (ItemList) ile aynı pattern'i kullanır — sadece filtrelenmiş articles ve farklı breadcrumb.
+**URL:** `/blog/:category_slug`
 
-FAQ sayfası, Bölüm 5.4'teki `faqPage()` builder'ını kullanır — veri kaynağı attraction değil global FAQ tablosudur:
+Blog Listing (Bölüm 6) ile aynı yapı — `CollectionPage` + `ItemList`. Tek fark: kategoriye göre filtrelenmiş articles ve farklı breadcrumb (Home → Blog → Tips & Guides).
 
-```php
-// FaqController@index
-$faqs    = Faq::where('is_published', true)->orderBy('sort_order')->get();
-$schemas = [
-    SchemaService::breadcrumb($breadcrumbs),
-    SchemaService::faqPage($faqs),  // aynı fonksiyon, farklı veri
-];
+---
+
+## 9. FAQ Sayfası
+
+**URL:** `/frequently-asked-questions`
+
 ```
+📊 VERİ KAYNAĞI: faqs tablosu (is_published = true, sort_order sıralı)
+🔄 DÖNGÜ: Tüm aktif FAQ'lar üzerinde iterasyon
+⚠️ FALLBACK: 0 FAQ → schema basma
+⚠️ DİKKAT: Cevaplardaki HTML temizlenmeli
+```
+
+Bölüm 5.4'teki `FAQPage` yapısının aynısı — veri kaynağı attraction değil global FAQ tablosudur.
 
 ---
 
@@ -1662,78 +1225,14 @@ $schemas = [
 
 ```
 📊 VERİ KAYNAĞI: passes tablosu + pass_variants tablosu
-🔄 DÖNGÜ: Her aktif pass → ayrı bir Product schema
-⚠️ KRİTİK: Variant sayısına göre Offer vs AggregateOffer seçimi otomatik
+🔄 DÖNGÜ: Her aktif pass → ayrı bir Product schema (ayrı <script> bloğu)
+⚠️ KRİTİK: Variant sayısına göre Offer vs AggregateOffer seçimi:
+   - 1 variant → Offer (tek fiyat)
+   - 2+ variant → AggregateOffer (lowPrice / highPrice)
+⚠️ FALLBACK: Aktif variant yoksa → o pass'ın schema'sını basma
 ```
 
-**PHP Builder:**
-
-```php
-public static function passProducts(): array
-{
-    $passes = Pass::where('is_active', true)->with('variants')->get();
-    $cfg    = config('schema');
-
-    return $passes->map(function (Pass $pass) use ($cfg) {
-        $variants = $pass->variants->where('is_active', true);
-
-        if ($variants->isEmpty()) {
-            return null; // Aktif variant yoksa schema basma
-        }
-
-        $schema = [
-            '@context'    => 'https://schema.org',
-            '@type'       => 'Product',
-            'name'        => SchemaHelpers::safeJson($pass->name),
-            'description' => SchemaHelpers::safeJson($pass->description),
-            'sku'         => 'ITP-' . strtoupper($pass->slug),
-            'brand'       => ['@id' => $cfg['base_url'] . '/#organization'],
-            'image'       => $pass->image_url ?? $cfg['og_image_url'],
-            'category'    => 'Sightseeing Pass',
-        ];
-
-        // Tek variant → Offer, birden fazla → AggregateOffer
-        if ($variants->count() === 1) {
-            $v = $variants->first();
-            $schema['offers'] = [
-                '@type'           => 'Offer',
-                'price'           => (string) $v->price,
-                'priceCurrency'   => $cfg['currency'],
-                'availability'    => 'https://schema.org/InStock',
-                'url'             => $cfg['base_url'] . '/istanbul-pass?pass=' . $pass->slug,
-                'priceValidUntil' => date('Y') . '-12-31',
-                'seller'          => ['@id' => $cfg['base_url'] . '/#organization'],
-            ];
-        } else {
-            $schema['offers'] = [
-                '@type'           => 'AggregateOffer',
-                'lowPrice'        => (string) $variants->min('price'),
-                'highPrice'       => (string) $variants->max('price'),
-                'priceCurrency'   => $cfg['currency'],
-                'offerCount'      => (string) $variants->count(),
-                'availability'    => 'https://schema.org/InStock',
-                'url'             => $cfg['base_url'] . '/istanbul-pass?pass=' . $pass->slug,
-                'priceValidUntil' => date('Y') . '-12-31',
-                'seller'          => ['@id' => $cfg['base_url'] . '/#organization'],
-            ];
-        }
-
-        // Review varsa ekle
-        if ($pass->review_count > 0) {
-            $schema['aggregateRating'] = [
-                '@type'       => 'AggregateRating',
-                'ratingValue' => (string) round($pass->average_rating, 1),
-                'reviewCount' => (string) $pass->review_count,
-                'bestRating'  => '5',
-            ];
-        }
-
-        return $schema;
-    })->filter()->values()->toArray();
-}
-```
-
-**Gerçek Çıktı (PRIME Pass örneği — 3 pass'ın biri):**
+**Gerçek Çıktı (PRIME Pass — 3 pass'tan biri):**
 
 ```json
 {
@@ -1742,9 +1241,7 @@ public static function passProducts(): array
     "name": "Istanbul PRIME Pass®",
     "description": "Ultimate Istanbul Experience — 7 landmarks, 120+ top attractions, premium activities & experiences. Priority hosted access + dedicated support line.",
     "sku": "ITP-PRIME",
-    "brand": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
+    "brand": { "@id": "https://www.istanbultouristpass.com/#organization" },
     "image": "https://www.istanbultouristpass.com/images/prime-pass.webp",
     "category": "Sightseeing Pass",
     "offers": {
@@ -1756,9 +1253,7 @@ public static function passProducts(): array
         "availability": "https://schema.org/InStock",
         "url": "https://www.istanbultouristpass.com/istanbul-pass?pass=prime",
         "priceValidUntil": "2026-12-31",
-        "seller": {
-            "@id": "https://www.istanbultouristpass.com/#organization"
-        }
+        "seller": { "@id": "https://www.istanbultouristpass.com/#organization" }
     },
     "aggregateRating": {
         "@type": "AggregateRating",
@@ -1769,179 +1264,49 @@ public static function passProducts(): array
 }
 ```
 
-> **⚠️ Controller'da kullanım notu:** `passProducts()` birden fazla schema döndürür (her pass = ayrı Product). `renderAll()` ile kullanırken `array_merge` ile spread edin:
-
-```php
-// PassController@index
-$passSchemas = SchemaService::passProducts(); // [Product1, Product2, Product3]
-
-$schemas = array_merge(
-    [
-        SchemaService::breadcrumb($breadcrumbs),
-    ],
-    $passSchemas  // spread — her biri ayrı <script> bloğu olur
-);
-```
+> **Not:** FAST Pass ve DISCOVER Pass için de aynı yapıda ayrı Product schema'ları basılmalıdır.
 
 ---
 
 ## 11. Reviews Sayfası
 
-**URL:** `/reviews`  
-**Controller:** `ReviewController@index`
+**URL:** `/reviews`
 
 ```
-📊 VERİ KAYNAĞI: reviews tablosu (tüm approved, limit 10)
-🔄 DÖNGÜ: foreach — anasayfadan farkı: limit 10, video testimonials eklenir
+📊 VERİ KAYNAĞI: reviews tablosu (is_approved = true, max 10) + video_testimonials tablosu
+🔄 DÖNGÜ: Review'lar ve video'lar üzerinde ayrı ayrı iterasyon
 ⚠️ FALLBACK: 0 review → schema basma
 ```
 
-Anasayfadaki `featuredReviews()` builder'ını (Bölüm 3.2) tekrar kullanın, tek fark `limit(10)`:
+Anasayfadaki Review schema (Bölüm 3.2) ile aynı yapı. Farklar: review limiti 10'a çıkar, video testimonials (Bölüm 3.6) için ek VideoObject blokları eklenir.
 
-```php
-// ReviewController@index
-$reviews = Review::where('is_approved', true)
-    ->orderByDesc('created_at')
-    ->limit(10)
-    ->get();
+---
 
-$schemas = array_filter([
-    SchemaService::breadcrumb($breadcrumbs),
-    $reviews->isNotEmpty() ? SchemaService::reviewCollection($reviews) : null,
-    // Video testimonials varsa:
-    ...SchemaService::videoTestimonials(
-        VideoTestimonial::where('is_active', true)->limit(5)->get()
-    ),
-]);
-```
+## 12. About Sayfası
 
-### 11.1 VideoObject (Testimonial Video)
+**URL:** `/about-us`
 
 ```
-📊 VERİ KAYNAĞI: video_testimonials tablosu
-🔄 DÖNGÜ: Her video ayrı bir schema
-⚠️ FALLBACK: Video yoksa basma. duration yoksa alanı çıkar.
+📊 VERİ KAYNAĞI: Sayfa meta verileri + Organization @id referansı
 ```
 
-**PHP Builder:**
-
-```php
-/**
- * Birden fazla VideoObject schema üretir (her video = ayrı schema).
- * @return array[] Spread edilerek schemas dizisine eklenebilir
- */
-public static function videoTestimonials($videos): array
-{
-    return collect($videos)->filter()->map(function ($video) {
-        $schema = [
-            '@context'     => 'https://schema.org',
-            '@type'        => 'VideoObject',
-            'name'         => SchemaHelpers::safeJson($video->title),
-            'description'  => SchemaHelpers::safeJson($video->description ?: $video->title),
-            'thumbnailUrl' => $video->thumbnail_url,
-            'uploadDate'   => $video->published_at?->format('Y-m-d')
-                              ?? $video->created_at->format('Y-m-d'),
-            'contentUrl'   => $video->youtube_url ?? $video->video_url,
-            'publisher'    => ['@id' => config('schema.base_url') . '/#organization'],
-        ];
-
-        // Opsiyonel: YouTube embed
-        if ($video->youtube_id) {
-            $schema['embedUrl'] = 'https://www.youtube.com/embed/' . $video->youtube_id;
-        }
-
-        // Opsiyonel: Süre
-        if ($video->duration_seconds && $video->duration_seconds > 0) {
-            $schema['duration'] = SchemaHelpers::isoDuration($video->duration_seconds);
-        }
-
-        return $schema;
-    })->values()->toArray();
-}
-```
-
-**Gerçek Çıktı (tek bir video):**
+**Template:**
 
 ```json
 {
     "@context": "https://schema.org",
-    "@type": "VideoObject",
-    "name": "Alina from Ukraine — Istanbul Tourist Pass Review",
-    "description": "Real traveler Alina shares her Istanbul Tourist Pass experience.",
-    "thumbnailUrl": "https://img.youtube.com/vi/7JQ-kfExIf8/hqdefault.jpg",
-    "uploadDate": "2025-06-01",
-    "contentUrl": "https://www.youtube.com/watch?v=7JQ-kfExIf8",
-    "publisher": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
-    "embedUrl": "https://www.youtube.com/embed/7JQ-kfExIf8",
-    "duration": "PT2M15S"
+    "@type": "AboutPage",
+    "@id": "{{ config.base_url }}/about-us/#webpage",
+    "name": "{{ page.meta_title | safeJson }}",
+    "description": "{{ page.meta_description | safeJson }}",
+    "url": "{{ config.base_url }}/about-us",
+    "isPartOf": { "@id": "{{ config.base_url }}/#website" },
+    "inLanguage": "{{ currentLocale }}",
+    "mainEntity": { "@id": "{{ config.base_url }}/#organization" }
 }
 ```
 
----
-
-## 12. Diğer Sayfa Tipleri
-
-Bu sayfaların hepsi generic bir `WebPage` schema + `BreadcrumbList` kullanır. Tek bir reusable fonksiyon yeterlidir:
-
-**PHP Builder:**
-
-```php
-/**
- * Generic WebPage schema — About, Contact, How It Works, Compare, Legal vs. için.
- *
- * @param string $slug         Sayfa slug'ı ("about-us", "contact", "privacy-policy")
- * @param string $title        Meta title
- * @param string $description  Meta description
- * @param string $schemaType   Schema @type override (default: WebPage)
- * @param array|null $mainEntity  Opsiyonel mainEntity (Service, DigitalDocument vs.)
- */
-public static function genericPage(
-    string $slug,
-    string $title,
-    string $description,
-    string $schemaType = 'WebPage',
-    ?array $mainEntity = null
-): array {
-    $cfg = config('schema');
-
-    $schema = [
-        '@context'    => 'https://schema.org',
-        '@type'       => $schemaType,
-        '@id'         => $cfg['base_url'] . '/' . $slug . '/#webpage',
-        'name'        => SchemaHelpers::safeJson($title),
-        'description' => SchemaHelpers::safeJson($description),
-        'url'         => $cfg['base_url'] . '/' . $slug,
-        'isPartOf'    => ['@id' => $cfg['base_url'] . '/#website'],
-        'inLanguage'  => app()->getLocale(),
-    ];
-
-    if ($mainEntity) {
-        $schema['mainEntity'] = $mainEntity;
-    }
-
-    return $schema;
-}
-```
-
-**Sayfa bazlı kullanım örnekleri:**
-
-| Sayfa | `$schemaType` | `$mainEntity` |
-|---|---|---|
-| `/about-us` | `AboutPage` | `['@id' => '.../#organization']` |
-| `/contact` | `ContactPage` | Organization ContactPoint referansı |
-| `/how-it-works` | `WebPage` | — (HowTo ayrı basılır) |
-| `/compare-passes` | `WebPage` | — |
-| `/download-app` | `WebPage` | — (SoftwareApplication ayrı basılır) |
-| `/plan-and-save` | `WebPage` | — |
-| `/what-you-get` | `WebPage` | `['@id' => '.../#product']` |
-| `/free-digital-istanbul-guidebook` | `WebPage` | `['@type' => 'DigitalDocument', ...]` |
-| `/group-request` | `WebPage` | `['@type' => 'Service', ...]` |
-| `/become-affiliate-partner` | `WebPage` | — |
-| `/privacy-policy` | `WebPage` | — (+ `lastReviewed` alanı ekle) |
-
-**Gerçek Çıktı (About sayfası):**
+**Gerçek Çıktı:**
 
 ```json
 {
@@ -1951,91 +1316,21 @@ public static function genericPage(
     "name": "About Istanbul Tourist Pass — Istanbul Experts Since 1995",
     "description": "Learn about Istanbul Tourist Pass — Istanbul's original sightseeing pass trusted by 500K+ travelers from 150+ countries since 2015.",
     "url": "https://www.istanbultouristpass.com/about-us",
-    "isPartOf": {
-        "@id": "https://www.istanbultouristpass.com/#website"
-    },
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
     "inLanguage": "en",
-    "mainEntity": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    }
+    "mainEntity": { "@id": "https://www.istanbultouristpass.com/#organization" }
 }
 ```
 
 ---
 
-### 12.2 CollectionPage (Blog Listing & Attraction Listing için)
+## 13. Contact Sayfası
+
+**URL:** `/contact`
 
 ```
-📊 VERİ KAYNAĞI: page meta verileri
-💡 İPUCU: Bu builder hem /blog hem /whats-included hem blog kategori sayfalarında kullanılır.
-```
-
-**PHP Builder:**
-
-```php
-public static function collectionPage(string $slug, string $title, string $description): array
-{
-    $cfg = config('schema');
-
-    return [
-        '@context'    => 'https://schema.org',
-        '@type'       => 'CollectionPage',
-        '@id'         => $cfg['base_url'] . '/' . $slug . '/#webpage',
-        'name'        => SchemaHelpers::safeJson($title),
-        'description' => SchemaHelpers::safeJson($description),
-        'url'         => $cfg['base_url'] . '/' . $slug,
-        'isPartOf'    => ['@id' => $cfg['base_url'] . '/#website'],
-        'inLanguage'  => app()->getLocale(),
-    ];
-}
-```
-
-**Gerçek Çıktı (`/blog`):**
-
-```json
-{
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "@id": "https://www.istanbultouristpass.com/blog/#webpage",
-    "name": "Istanbul Travel Guide — Tips, Guides & Stories",
-    "description": "Plan your trip like a local with our Istanbul travel guides, insider tips, and expert recommendations.",
-    "url": "https://www.istanbultouristpass.com/blog",
-    "isPartOf": {
-        "@id": "https://www.istanbultouristpass.com/#website"
-    },
-    "inLanguage": "en"
-}
-```
-
----
-
-### 12.3 ContactPage + ContactPoint
-
-```
-📊 VERİ KAYNAĞI: config/schema.php (iletişim bilgileri)
-```
-
-**PHP Builder:**
-
-```php
-public static function contactPage(): array
-{
-    $cfg = config('schema');
-
-    return [
-        '@context'    => 'https://schema.org',
-        '@type'       => 'ContactPage',
-        '@id'         => $cfg['base_url'] . '/contact/#webpage',
-        'name'        => 'Contact Istanbul Tourist Pass — Get Help',
-        'description' => 'Get in touch with our Istanbul expert team via phone, WhatsApp, email, or live chat.',
-        'url'         => $cfg['base_url'] . '/contact',
-        'isPartOf'    => ['@id' => $cfg['base_url'] . '/#website'],
-        'inLanguage'  => app()->getLocale(),
-        'mainEntity'  => [
-            '@id' => $cfg['base_url'] . '/#organization',
-        ],
-    ];
-}
+📊 VERİ KAYNAĞI: Sayfa meta verileri + Organization @id referansı
+💡 NOT: ContactPoint detayları zaten Organization schema'sında (Bölüm 2.1) tanımlıdır. Google @id referansı ile otomatik birleştirir.
 ```
 
 **Gerçek Çıktı:**
@@ -2046,67 +1341,196 @@ public static function contactPage(): array
     "@type": "ContactPage",
     "@id": "https://www.istanbultouristpass.com/contact/#webpage",
     "name": "Contact Istanbul Tourist Pass — Get Help",
-    "description": "Get in touch with our Istanbul expert team via phone, WhatsApp, email, or live chat.",
+    "description": "Get in touch with our Istanbul expert team via phone, WhatsApp, email, or live chat. Available 7 days a week.",
     "url": "https://www.istanbultouristpass.com/contact",
-    "isPartOf": {
-        "@id": "https://www.istanbultouristpass.com/#website"
-    },
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": { "@id": "https://www.istanbultouristpass.com/#organization" }
+}
+```
+
+---
+
+## 14. How It Works Sayfası
+
+**URL:** `/how-it-works`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri + HowTo (Bölüm 3.3) ayrıca basılır
+💡 NOT: Bu sayfada 2 schema basılır — WebPage + HowTo
+```
+
+**Gerçek Çıktı (WebPage):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/how-it-works/#webpage",
+    "name": "How Istanbul Tourist Pass Works — Simple 3-Step Process",
+    "description": "Get your pass, download the app, and start exploring Istanbul's 120+ attractions with skip-the-line access.",
+    "url": "https://www.istanbultouristpass.com/how-it-works",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
+}
+```
+
+> HowTo schema'sı (adımlar) → Bölüm 3.3'teki çıktının aynısı bu sayfada da basılır.
+
+---
+
+## 15. Compare Passes Sayfası
+
+**URL:** `/compare-passes`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri + pass Product @id referansları
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/compare-passes/#webpage",
+    "name": "Compare Istanbul Tourist Passes — FAST vs DISCOVER vs PRIME",
+    "description": "Compare all Istanbul Tourist Pass options side by side. Find the best pass for your trip based on duration, attractions, and budget.",
+    "url": "https://www.istanbultouristpass.com/compare-passes",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
+}
+```
+
+---
+
+## 16. Download App Sayfası
+
+**URL:** `/download-app`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri + SoftwareApplication (Bölüm 3.4)
+💡 NOT: Bu sayfada 2 schema basılır — WebPage + SoftwareApplication
+⚠️ FALLBACK: App store URL'leri yoksa SoftwareApplication basma
+```
+
+**Gerçek Çıktı (WebPage):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/download-app/#webpage",
+    "name": "Download the Istanbul Tourist Pass® App",
+    "description": "Download the Istanbul Tourist Pass app for iOS and Android to manage your pass, plan your itinerary, and explore Istanbul with audio guides in 25 languages.",
+    "url": "https://www.istanbultouristpass.com/download-app",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
+}
+```
+
+> SoftwareApplication schema'sı → Bölüm 3.4'teki çıktının aynısı bu sayfada da basılır.
+
+---
+
+## 17. Plan & Save Sayfası
+
+**URL:** `/plan-and-save`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri
+💡 NOT: Hesaplama aracı varsa opsiyonel WebApplication schema eklenebilir
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/plan-and-save/#webpage",
+    "name": "Plan & Save Your Istanbul Trip | Istanbul Tourist Pass®",
+    "description": "Plan your Istanbul itinerary and see how much you save with Istanbul Tourist Pass compared to buying individual tickets.",
+    "url": "https://www.istanbultouristpass.com/plan-and-save",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
+}
+```
+
+---
+
+## 18. What You Get Sayfası
+
+**URL:** `/what-you-get`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri + ana ürün Product @id referansı
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/what-you-get/#webpage",
+    "name": "What You Get with Istanbul Tourist Pass® — All Included Benefits",
+    "description": "See everything included in your Istanbul Tourist Pass: skip-the-line access, guided tours, Bosphorus cruises, audio guides in 25 languages, mobile app, and expert support.",
+    "url": "https://www.istanbultouristpass.com/what-you-get",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": { "@id": "https://www.istanbultouristpass.com/#product" }
+}
+```
+
+---
+
+## 19. Free Digital Guidebook Sayfası
+
+**URL:** `/free-digital-istanbul-guidebook`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri + DigitalDocument bilgisi
+💡 NOT: Lead generation sayfası — PDF indirme formu
+```
+
+**Gerçek Çıktı:**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/free-digital-istanbul-guidebook/#webpage",
+    "name": "Free Digital Istanbul Guidebook | Istanbul Tourist Pass®",
+    "description": "Download our free digital Istanbul guidebook with insider tips, must-see attractions, and practical travel advice.",
+    "url": "https://www.istanbultouristpass.com/free-digital-istanbul-guidebook",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
     "inLanguage": "en",
     "mainEntity": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
+        "@type": "DigitalDocument",
+        "name": "Free Istanbul Digital Guidebook",
+        "description": "Comprehensive digital guidebook covering Istanbul's top attractions, neighborhoods, food scene, and practical travel tips.",
+        "author": { "@id": "https://www.istanbultouristpass.com/#organization" },
+        "encodingFormat": "application/pdf",
+        "isAccessibleForFree": true,
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+        }
     }
 }
 ```
-
-> **Not:** ContactPoint detayları zaten Organization schema'sında (Bölüm 2.1) tanımlıdır. Google, `@id` referansı ile otomatik birleştirir. Ayrı bir ContactPoint schema'sı basmaya gerek yoktur.
 
 ---
 
-### 12.4 SoftwareApplication (Download App sayfası)
+## 20. Group Request Sayfası
+
+**URL:** `/group-request`
 
 ```
-📊 VERİ KAYNAĞI: config/schema.php (app URL'leri, uygulama bilgisi)
-⚠️ FALLBACK: App store URL'leri yoksa bu schema'yı basma
-```
-
-**PHP Builder:**
-
-```php
-public static function softwareApplication(): ?array
-{
-    $cfg = config('schema');
-
-    // App store URL'leri yoksa schema basma
-    if (empty($cfg['ios_app_url']) && empty($cfg['android_app_url'])) {
-        return null;
-    }
-
-    $schema = [
-        '@context'            => 'https://schema.org',
-        '@type'               => 'SoftwareApplication',
-        'name'                => $cfg['site_name'],
-        'operatingSystem'     => 'iOS 15.0+, Android 8.0+',
-        'applicationCategory' => 'TravelApplication',
-        'description'         => SchemaHelpers::safeJson(
-            'Download the Istanbul Tourist Pass app to access your digital pass, manage reservations, and explore Istanbul with audio guides in 25 languages.'
-        ),
-        'offers' => [
-            '@type'         => 'Offer',
-            'price'         => '0',
-            'priceCurrency' => $cfg['currency'],
-        ],
-        'author' => ['@id' => $cfg['base_url'] . '/#organization'],
-    ];
-
-    if (!empty($cfg['ios_app_url'])) {
-        $schema['installUrl'] = $cfg['ios_app_url'];
-    }
-    if (!empty($cfg['android_app_url'])) {
-        $schema['downloadUrl'] = $cfg['android_app_url'];
-    }
-
-    return $schema;
-}
+📊 VERİ KAYNAĞI: Sayfa meta verileri + Service tanımı
 ```
 
 **Gerçek Çıktı:**
@@ -2114,146 +1538,207 @@ public static function softwareApplication(): ?array
 ```json
 {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Istanbul Tourist Pass",
-    "operatingSystem": "iOS 15.0+, Android 8.0+",
-    "applicationCategory": "TravelApplication",
-    "description": "Download the Istanbul Tourist Pass app to access your digital pass, manage reservations, and explore Istanbul with audio guides in 25 languages.",
-    "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "EUR"
-    },
-    "author": {
-        "@id": "https://www.istanbultouristpass.com/#organization"
-    },
-    "installUrl": "https://apps.apple.com/tr/app/istanbul-tourist-pass/id6535683117",
-    "downloadUrl": "https://play.google.com/store/apps/details?id=com.istanbultouristpass.app"
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/group-request/#webpage",
+    "name": "Group Requests | Istanbul Tourist Pass®",
+    "description": "Plan a group visit to Istanbul with special group pricing and dedicated support. Perfect for school groups, corporate teams, and tour operators.",
+    "url": "https://www.istanbultouristpass.com/group-request",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": {
+        "@type": "Service",
+        "name": "Istanbul Tourist Pass — Group Booking Service",
+        "description": "Special group pricing and dedicated coordination for groups of 10+ travelers visiting Istanbul.",
+        "provider": { "@id": "https://www.istanbultouristpass.com/#organization" },
+        "serviceType": "Group Travel Planning",
+        "areaServed": { "@type": "City", "name": "Istanbul" }
+    }
 }
 ```
 
 ---
 
-### 12.5 SiteNavigationElement (Anasayfada, opsiyonel)
+## 21. Special Offer & Service Sayfaları
+
+**URL'ler:** `/tourist-sim-card-...`, `/meet-and-greet-...`, `/special-discounts`, `/health-benefits`, `/exclusive-travel-services`
 
 ```
-📊 VERİ KAYNAĞI: navigation/menu tablosu veya config
-🔄 DÖNGÜ: Ana menü item'ları üzerinden
-💡 ÖNCELİK: 🟢 BONUS — Sprint 3
+📊 VERİ KAYNAĞI: Sayfa meta verileri + Service/Offer bilgileri
+🔄 HER SERVİS SAYFASI İÇİN: Ayrı ayrı WebPage + Service schema
+⚠️ FALLBACK: price yoksa → offers bloğunu çıkar
 ```
 
-**PHP Builder:**
-
-```php
-public static function siteNavigation(): ?array
-{
-    // Menü item'ları CMS'den veya config'den
-    $menuItems = MenuItem::where('menu_id', 'main')
-        ->where('is_visible', true)
-        ->orderBy('sort_order')
-        ->get();
-
-    if ($menuItems->isEmpty()) {
-        return null;
-    }
-
-    $cfg = config('schema');
-
-    return [
-        '@context' => 'https://schema.org',
-        '@type'    => 'SiteNavigationElement',
-        'name'     => 'Main Navigation',
-        'hasPart'  => $menuItems->map(fn($item) => [
-            '@type' => 'WebPage',
-            'name'  => SchemaHelpers::safeJson($item->label),
-            'url'   => $item->full_url ?? $cfg['base_url'] . '/' . $item->slug,
-        ])->toArray(),
-    ];
-}
-```
-
-**Gerçek Çıktı:**
+**Template:**
 
 ```json
 {
     "@context": "https://schema.org",
-    "@type": "SiteNavigationElement",
-    "name": "Main Navigation",
-    "hasPart": [
-        { "@type": "WebPage", "name": "Attractions", "url": "https://www.istanbultouristpass.com/whats-included" },
-        { "@type": "WebPage", "name": "Passes & Prices", "url": "https://www.istanbultouristpass.com/istanbul-pass" },
-        { "@type": "WebPage", "name": "Compare Passes", "url": "https://www.istanbultouristpass.com/compare-passes" },
-        { "@type": "WebPage", "name": "Blog", "url": "https://www.istanbultouristpass.com/blog" },
-        { "@type": "WebPage", "name": "FAQs", "url": "https://www.istanbultouristpass.com/frequently-asked-questions" },
-        { "@type": "WebPage", "name": "Contact Us", "url": "https://www.istanbultouristpass.com/contact" }
-    ]
-}
-```
-
----
-
-### 12.6 OfferCatalog (Attraction Listing — kategori bazlı)
-
-```
-📊 VERİ KAYNAĞI: attraction_categories tablosu + count query
-🔄 DÖNGÜ: Kategoriler ve her birinin aktif attraction sayısı
-⚠️ FALLBACK: Kategoride 0 attraction varsa o kategoriyi atla
-💡 ÖNCELİK: 🟢 BONUS — Sprint 3
-```
-
-**PHP Builder:**
-
-```php
-public static function offerCatalog(): ?array
-{
-    $categories = AttractionCategory::withCount(['attractions' => function ($q) {
-        $q->where('is_active', true);
-    }])->having('attractions_count', '>', 0)->get();
-
-    if ($categories->isEmpty()) {
-        return null;
+    "@type": "WebPage",
+    "@id": "{{ config.base_url }}/{{ page.slug }}/#webpage",
+    "name": "{{ page.meta_title | safeJson }}",
+    "description": "{{ page.meta_description | safeJson }}",
+    "url": "{{ config.base_url }}/{{ page.slug }}",
+    "isPartOf": { "@id": "{{ config.base_url }}/#website" },
+    "inLanguage": "{{ currentLocale }}",
+    "mainEntity": {
+        "@type": "Service",
+        "name": "{{ service.name | safeJson }}",
+        "description": "{{ service.description | safeJson }}",
+        "provider": { "@id": "{{ config.base_url }}/#organization" },
+        "serviceType": "{{ service.type }}",
+        "areaServed": { "@type": "{{ service.area_type }}", "name": "{{ service.area_name }}" },
+        // ⚠️ SADECE price varsa ekle:
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "{{ config.currency }}",
+            "price": "{{ service.price }}",
+            "availability": "https://schema.org/InStock"
+        }
     }
-
-    return [
-        '@context'        => 'https://schema.org',
-        '@type'           => 'OfferCatalog',
-        'name'            => 'Istanbul Tourist Pass Attraction Categories',
-        'itemListElement' => $categories->map(fn($c) => [
-            '@type'         => 'OfferCatalog',
-            'name'          => SchemaHelpers::safeJson($c->name),
-            'numberOfItems' => $c->attractions_count,
-        ])->toArray(),
-    ];
 }
 ```
 
-**Gerçek Çıktı:**
+**Gerçek Çıktı (Tourist eSIM sayfası):**
 
 ```json
 {
     "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    "name": "Istanbul Tourist Pass Attraction Categories",
-    "itemListElement": [
-        { "@type": "OfferCatalog", "name": "Museums", "numberOfItems": 35 },
-        { "@type": "OfferCatalog", "name": "Mosques & Places of Worship", "numberOfItems": 9 },
-        { "@type": "OfferCatalog", "name": "Historical Landmarks", "numberOfItems": 30 },
-        { "@type": "OfferCatalog", "name": "Sightseeing & Bosphorus Cruise", "numberOfItems": 12 },
-        { "@type": "OfferCatalog", "name": "Shows & Entertainment", "numberOfItems": 7 },
-        { "@type": "OfferCatalog", "name": "Family Friendly", "numberOfItems": 20 }
-    ]
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/tourist-sim-card-internet-access-on-your-device/#webpage",
+    "name": "Tourist eSIM in Turkey | Istanbul Tourist Pass®",
+    "description": "Stay connected during your Istanbul trip with a tourist eSIM. Easy setup, instant activation, and unlimited data coverage across Turkey.",
+    "url": "https://www.istanbultouristpass.com/tourist-sim-card-internet-access-on-your-device",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": {
+        "@type": "Service",
+        "name": "Tourist eSIM in Turkey",
+        "description": "Stay connected during your Istanbul trip with a tourist eSIM. Easy setup, instant activation, and unlimited data coverage across Turkey.",
+        "provider": { "@id": "https://www.istanbultouristpass.com/#organization" },
+        "serviceType": "Telecommunications Service",
+        "areaServed": { "@type": "Country", "name": "Turkey" },
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+        }
+    }
+}
+```
+
+**Gerçek Çıktı (Meet & Greet sayfası):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/meet-and-greet-service-at-istanbul-airport/#webpage",
+    "name": "Meet and Greet Service at Istanbul Airport | Istanbul Tourist Pass®",
+    "description": "VIP airport welcome service with a personal greeter at Istanbul Airport. Assistance with customs, baggage, and transfer coordination.",
+    "url": "https://www.istanbultouristpass.com/meet-and-greet-service-at-istanbul-airport",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": {
+        "@type": "Service",
+        "name": "Meet and Greet Service at Istanbul Airport",
+        "description": "VIP airport welcome service with a personal greeter at Istanbul Airport.",
+        "provider": { "@id": "https://www.istanbultouristpass.com/#organization" },
+        "serviceType": "Airport Concierge Service",
+        "areaServed": { "@type": "Airport", "name": "Istanbul Airport", "iataCode": "IST" }
+    }
+}
+```
+
+**Gerçek Çıktı (Special Discounts sayfası):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/special-discounts/#webpage",
+    "name": "Special Discounts & Deals | Istanbul Tourist Pass®",
+    "description": "Exclusive discounts and special offers for Istanbul Tourist Pass holders at partner restaurants, shops, and services.",
+    "url": "https://www.istanbultouristpass.com/special-discounts",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "mainEntity": {
+        "@type": "OfferCatalog",
+        "name": "Istanbul Tourist Pass — Special Discounts & Deals",
+        "description": "Exclusive discounts for Istanbul Tourist Pass holders.",
+        "itemListElement": [
+            {
+                "@type": "Offer",
+                "name": "30% Off Health & Wellness Services",
+                "description": "Exclusive health benefit discounts at top Istanbul hospitals and wellness centers.",
+                "priceCurrency": "EUR"
+            }
+        ]
+    }
 }
 ```
 
 ---
 
-## 13. Implementasyon Checklist
+## 22. Partner & Affiliate Sayfaları
 
-### 13.1 Test Matrisi
+**URL'ler:** `/become-affiliate-partner`, `/reseller`, `/creators-influencers`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri
+💡 NOT: Basit WebPage yeterli — ek mainEntity gerekmez
+```
+
+**Gerçek Çıktı (Affiliate Partner sayfası):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/become-affiliate-partner/#webpage",
+    "name": "Become an Affiliate Partner — Istanbul Tourist Pass",
+    "description": "Join Istanbul Tourist Pass affiliate program. Earn commissions by promoting Istanbul's #1 sightseeing pass to your audience.",
+    "url": "https://www.istanbultouristpass.com/become-affiliate-partner",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en"
+}
+```
+
+---
+
+## 23. Legal Sayfaları
+
+**URL'ler:** `/privacy-policy`, `/terms-of-use`, `/cookie-policy`
+
+```
+📊 VERİ KAYNAĞI: Sayfa meta verileri
+💡 NOT: lastReviewed alanı eklenmeli — son güncelleme tarihi
+```
+
+**Gerçek Çıktı (Privacy Policy):**
+
+```json
+{
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.istanbultouristpass.com/privacy-policy/#webpage",
+    "name": "Privacy Policy | Istanbul Tourist Pass®",
+    "description": "Istanbul Tourist Pass privacy policy. Learn how we collect, use, and protect your personal data.",
+    "url": "https://www.istanbultouristpass.com/privacy-policy",
+    "isPartOf": { "@id": "https://www.istanbultouristpass.com/#website" },
+    "inLanguage": "en",
+    "lastReviewed": "2025-12-01"
+}
+```
+
+---
+
+## 24. Implementasyon Checklist
+
+### 24.1 Test Matrisi
 
 | # | Test | Nasıl | Geçme Kriteri |
 |---|---|---|---|
-| 1 | JSON syntax | `json_decode()` + `json_last_error()` | Hata yok |
+| 1 | JSON syntax | JSON validator/parser | Hata yok |
 | 2 | Google Rich Results | https://search.google.com/test/rich-results | Tüm schema'lar valid |
 | 3 | Fiyat tutarlılığı | Schema price vs. sayfadaki price | Birebir eşleşme |
 | 4 | Boş veri senaryosu | DB'den image/review/faq sil, sayfayı test et | JSON bozulmamış, blok basılmamış |
@@ -2264,27 +1749,28 @@ public static function offerCatalog(): ?array
 | 9 | Null price | Attraction fiyatını null yap | Product schema basılmamış |
 | 10 | 0 review | Attraction'ın tüm review'larını sil | aggregateRating bloğu yok |
 
-### 13.2 Yaygın Hatalar
+### 24.2 Yaygın Hatalar
 
 | Hata | Neden | Çözüm |
 |---|---|---|
-| `price mismatch` | Schema fiyatı ≠ sayfadaki | Aynı `$attraction->current_price` kaynağını kullan |
-| `Missing field "image"` | null gelmiş | `?? config('schema.og_image_url')` fallback |
-| `Invalid date format` | Boş string basılmış | `if ($date) {}` koşulu |
-| `Duplicate schema` | Aynı Product 2 kez | `@id` kontrolü |
-| `JSON parse error` | Tırnak/newline var | `SchemaHelpers::safeJson()` kullan |
-| `priceValidUntil expired` | Geçen yıl kalmış | `date('Y') . '-12-31'` dinamik hesapla |
+| `price mismatch` | Schema fiyatı ≠ sayfadaki fiyat | Aynı veri kaynağından çek |
+| `Missing field "image"` | null/empty gelmiş | Fallback: OG image URL |
+| `Invalid date format` | Boş string basılmış | Tarih yoksa alanı çıkar |
+| `Duplicate schema` | Aynı Product 2 kez basılmış | @id kontrolü + tek kaynak |
+| `JSON parse error` | Description'da tırnak/newline var | safeJson helper kullan |
+| `priceValidUntil expired` | Geçen yılın tarihi kalmış | currentYear dinamik hesapla |
+| `reviewCount: 0 + ratingValue` | 0 review'la rating basmak | count > 0 koşulu ekle |
 
-### 13.3 Sprint Planı
+### 24.3 Sprint Planı
 
 | Sprint | Süre | Kapsam | Schema |
 |---|---|---|---|
-| **1** | 1-2 hafta | SchemaService + helpers + global bileşenler + Anasayfa + Attraction Detay + Blog Detay + FAQ + Pass | ~35 |
-| **2** | 1-2 hafta | Listing'ler + ItemList + About/Contact/HowItWorks + App + Kategori | ~18 |
-| **3** | 1 hafta | Service sayfaları + Partner + Legal + Guidebook + Video'lar | ~9 |
+| **1** | 1-2 hafta | Global bileşenler + Anasayfa + Attraction Detay + Blog Detay + FAQ + Pass & Fiyatlar + Reviews | ~35 |
+| **2** | 1-2 hafta | Listing'ler + ItemList'ler + About/Contact/How-It-Works + Download App + Blog Kategori | ~18 |
+| **3** | 1 hafta | Service sayfaları + Partner + Legal + Guidebook + OfferCatalog + VideoObject'ler | ~9 |
 | **TOPLAM** | | **22 sayfa tipi** | **~62** |
 
-### 13.4 Doğrulama Araçları
+### 24.4 Doğrulama Araçları
 
 | Araç | URL | Ne İçin |
 |---|---|---|
@@ -2295,7 +1781,6 @@ public static function offerCatalog(): ?array
 
 ---
 
-> **Toplam:** 22 sayfa tipi, ~62 schema, 3-katmanlı PHP bileşen mimarisi  
-> **Her schema için:** PHP builder kodu + gerçek çıktı örneği + fallback kuralları + veri kaynağı notu  
-> **Tüm builder'lar:** Organization, WebSite, BreadcrumbList, hreflang, Product, AggregateOffer, Review, HowTo, ItemList, CollectionPage, TouristAttraction, Offer, Event, FAQPage, BlogPosting, VideoObject, SoftwareApplication, ContactPage, SiteNavigationElement, OfferCatalog, genericPage  
-> **Değişkenler:** Laravel/Eloquent varsayılmıştır — kendi ORM/framework'ünüze uyarlayın
+> **Toplam:** 22 sayfa tipi, ~62 schema, 3-katmanlı bileşen mimarisi  
+> **Her schema için:** Dinamik template + gerçek çıktı örneği + fallback kuralları + veri kaynağı notu  
+> **Tüm builder'lar:** Organization, WebSite, BreadcrumbList, hreflang, Product, AggregateOffer, Review, HowTo, ItemList, CollectionPage, TouristAttraction, Offer, Event, FAQPage, BlogPosting, VideoObject, SoftwareApplication, ContactPage, SiteNavigationElement, OfferCatalog, genericPage
